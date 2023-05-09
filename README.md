@@ -13,8 +13,13 @@
 
 **Доступные команды:**
 
-* check_files *type* - выводит список всех файлов с заданным типом (с ключами)
-на вашем диске
-  + type: [audio, image, video, table, any, text]
+* check_files_in *directory* *type* - выводит список всех файлов с заданным типом (с ключами)
+на вашем диске в указанной папке
+  + type: [audio, image, video, table, any, text, folder]
+  + directory: имя любой папки на вашем диске (регистр важен)
 
-**Пример использования:** python main.py check_files images
+**Пример использования:**
+
+Код ниже выведет список всех изображений, которые находятся в директории Photos
+
+    python main.py check_files_in Photos images 

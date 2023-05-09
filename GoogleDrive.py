@@ -7,7 +7,6 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import google.auth
 from googleapiclient.http import MediaIoBaseDownload
 
 # If modifying these scopes, delete the file token.json.
@@ -16,10 +15,14 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 def main():
     pass
-    #take_first_ten_files()
-    #with open('Downloads/TestFile.txt', 'wb') as f:
+    # take_first_ten_files()
+    # with open('Downloads/TestFile.txt', 'wb') as f:
     #    shutil.copyfileobj(download_file('19671U7PqmEDS8CIbj4cVm2D9-zQ3Yze4'),
     #                       f, length=1024)
+
+
+def build_service(creds):
+    return build('drive', 'v3', credentials=creds)
 
 
 def authorize():
@@ -82,32 +85,32 @@ def download_file(real_file_id):
     return file
 
 
-def search_files(extension):
+def search_files(service, directory_id, extension):
     """Search file in drive location
 
     Load pre-authorized user credentials from the environment.
     TODO(developer) - See https://developers.google.com/identity
     for guides on implementing OAuth2 for the application.
     """
-    creds = authorize()
 
     try:
-        # create drive api client
-        service = build('drive', 'v3', credentials=creds)
         files = []
         page_token = None
+
         while True:
-            # pylint: disable=maybe-no-member
-            response = service.files().list(q="trashed=false"
-                                              f"and {extension}"
-                                              "and 'me' in owners",
+            response = service.files().list(q="trashed=false "
+                                              f"and {extension} "
+                                              f"and 'me' in owners "
+                                              f"and '{directory_id}' in parents",
                                             spaces='drive',
                                             fields='nextPageToken, '
-                                                   'files(id, name)',
+                                                   'files(id, name, fullFileExtension, mimeType, parents)',
                                             pageToken=page_token).execute()
             for file in response.get('files', []):
-                # Process change
-                print(F'Found file: {file.get("name")}, {file.get("id")}')
+                if "folder" in file.get("mimeType"):
+                    print(F'Folder: {file.get("name")}, {file.get("id")}')
+                else:
+                    print(F'File: {file.get("name")}, {file.get("id")}, {file.get("parents")}')
             files.extend(response.get('files', []))
             page_token = response.get('nextPageToken', None)
             if page_token is None:
@@ -121,3 +124,23 @@ def search_files(extension):
 
     return files
 
+
+def get_id_from_name(service, name):
+    if name == 'root':
+        return name
+
+    try:
+        response = service.files().list(q="trashed=false"
+                                          f"and name='{name}'").execute()
+
+        if not response.get('files', []):
+            print(f"Wrong name: {name}")
+            return None
+
+        file = response.get('files', [])[0]
+
+    except HttpError as error:
+        print(F'An error occurred: {error}')
+        file = None
+
+    return file.get("id")
