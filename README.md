@@ -13,6 +13,8 @@
 
 **Доступные команды:**
 
-* check_files - выводит список всех файлов (с ключами) на вашем диске
+* check_files *type* - выводит список всех файлов с заданным типом (с ключами)
+на вашем диске
+  + type: [audio, image, video, table, any, text]
 
-**Пример использования:** python main.py check_files
+**Пример использования:** python main.py check_files images

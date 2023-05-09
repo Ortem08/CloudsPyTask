@@ -15,7 +15,8 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
 def main():
-    take_first_ten_files()
+    pass
+    #take_first_ten_files()
     #with open('Downloads/TestFile.txt', 'wb') as f:
     #    shutil.copyfileobj(download_file('19671U7PqmEDS8CIbj4cVm2D9-zQ3Yze4'),
     #                       f, length=1024)
@@ -81,7 +82,7 @@ def download_file(real_file_id):
     return file
 
 
-def search_files():
+def search_files(extension):
     """Search file in drive location
 
     Load pre-authorized user credentials from the environment.
@@ -98,7 +99,7 @@ def search_files():
         while True:
             # pylint: disable=maybe-no-member
             response = service.files().list(q="trashed=false"
-                                              #"and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'"
+                                              f"and {extension}"
                                               "and 'me' in owners",
                                             spaces='drive',
                                             fields='nextPageToken, '
