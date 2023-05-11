@@ -1,4 +1,5 @@
 import fire
+import os
 
 import GoogleDrive
 
@@ -27,7 +28,7 @@ possible_extensions = {'folder': 'mimeType="application/vnd.google-apps'
 creds = GoogleDrive.authorize()
 
 
-def check_files_in(directory='root', files_type='any'):
+def check_files_in(directory='all_folders', files_type='any'):
     """
     Returns a list of user's files from concrete directory on GDrive
     Parameters
@@ -44,17 +45,26 @@ def check_files_in(directory='root', files_type='any'):
         list of found files or None
     """
     service = GoogleDrive.build_service(creds)
+    if directory != 'all_folders':
+        dir_id = GoogleDrive.get_id_from_name(service, directory)
 
-    dir_id = GoogleDrive.get_id_from_name(service, directory)
-    if not dir_id:
-        print(f"Wrong directory: {directory}")
-        return
+        if not dir_id:
+            print(f"Wrong directory: {directory}")
+            return
+    else:
+        dir_id = 'all_folders'
+
     if files_type not in possible_extensions:
         print(f"Unsupported extension: {files_type}")
         return
 
     files = GoogleDrive.search_files(service, dir_id,
                                      possible_extensions[files_type])
+
+
+def download_file(name):
+    service = GoogleDrive.build_service(creds)
+    file_id = GoogleDrive.get_id_from_name(service, name)
 
 
 if __name__ == '__main__':

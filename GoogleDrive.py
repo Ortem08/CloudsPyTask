@@ -13,14 +13,6 @@ from googleapiclient.http import MediaIoBaseDownload
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
-def main():
-    pass
-    # take_first_ten_files()
-    # with open('Downloads/TestFile.txt', 'wb') as f:
-    #    shutil.copyfileobj(download_file('19671U7PqmEDS8CIbj4cVm2D9-zQ3Yze4'),
-    #                       f, length=1024)
-
-
 def build_service(creds):
     return build('drive', 'v3', credentials=creds)
 
@@ -52,10 +44,6 @@ def download_file(real_file_id):
     Args:
         real_file_id: ID of the file to download
     Returns : IO object with location.
-
-    Load pre-authorized user credentials from the environment.
-    TODO(developer) - See https://developers.google.com/identity
-    for guides on implementing OAuth2 for the application.
     """
     creds = authorize()
 
@@ -85,36 +73,35 @@ def download_file(real_file_id):
     return file
 
 
-def search_files(service, directory_id, extension):
-    """Search file in drive location
-
-    Load pre-authorized user credentials from the environment.
-    TODO(developer) - See https://developers.google.com/identity
-    for guides on implementing OAuth2 for the application.
-    """
+def search_files(service, directory_id, extension, name=''):
+    """Search file in drive location"""
 
     try:
         files = []
         page_token = None
 
+        q = "trashed=false " \
+            f"and 'me' in owners " + \
+            make_q_parameters(name, extension, directory_id)
+
         while True:
-            response = service.files().list(q="trashed=false "
-                                              f"and {extension} "
-                                              f"and 'me' in owners "
-                                              f"and '{directory_id}' in parents",
+            response = service.files().list(q=q,
                                             spaces='drive',
                                             fields='nextPageToken, '
                                                    'files(id, name, fullFileExtension, mimeType, parents)',
                                             pageToken=page_token).execute()
+
             for file in response.get('files', []):
                 if "folder" in file.get("mimeType"):
                     print(F'Folder: {file.get("name")}, {file.get("id")}')
                 else:
                     print(F'File: {file.get("name")}, {file.get("id")}, {file.get("parents")}')
+
             files.extend(response.get('files', []))
             page_token = response.get('nextPageToken', None)
             if page_token is None:
                 break
+
         if not files:
             print("No such files")
 
@@ -144,3 +131,16 @@ def get_id_from_name(service, name):
         file = None
 
     return file.get("id")
+
+
+def make_q_parameters(name, extension, parent):
+    q = ''
+    if name != '':
+        q = q + f"and name contains '{name}.' "
+    if parent != 'all_folders':
+        q = q + f"and '{parent}' in parents "
+    if extension:
+        q = q + f"and {extension} "
+
+    return q
+
