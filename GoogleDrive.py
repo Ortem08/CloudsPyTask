@@ -39,7 +39,7 @@ def authorize():
     return creds
 
 
-def download_file(real_file_id):
+def download_file(name, real_file_id=''):
     """Downloads a file
     Args:
         real_file_id: ID of the file to download
@@ -93,9 +93,11 @@ def search_files(service, directory_id, extension, name=''):
 
             for file in response.get('files', []):
                 if "folder" in file.get("mimeType"):
-                    print(F'Folder: {file.get("name")}, {file.get("id")}')
+                    print(F'Папка: {file.get("name")}')
+                    print(F'путь: {get_path_for_file(service, file)}', end='\n\n')
                 else:
-                    print(F'File: {file.get("name")}, {file.get("id")}, {file.get("parents")}')
+                    print(F'Файл: {file.get("name")}')
+                    print(F'путь: {get_path_for_file(service, file)}', end='\n\n')
 
             files.extend(response.get('files', []))
             page_token = response.get('nextPageToken', None)
@@ -104,6 +106,57 @@ def search_files(service, directory_id, extension, name=''):
 
         if not files:
             print("No such files")
+
+    except HttpError as error:
+        print(F'An error occurred: {error}')
+        files = None
+    return files
+
+
+def get_path_for_file(service, file):
+    # Get the parent folder IDs
+    parent_ids = file.get("parents")
+
+    # Get the path to the file
+    path_parts = []
+
+    while parent_ids:
+        parent_id = parent_ids[0]
+        parent_metadata = service.files().get(fileId=parent_id,
+                                              fields="id, name, parents").execute()
+        parent_name = parent_metadata.get("name")
+        path_parts.insert(0, parent_name)
+        parent_ids = parent_metadata.get("parents")
+
+    file_path = "/".join(path_parts) + '/'
+    return file_path
+
+
+def get_id_2(service, name):
+    try:
+        files = []
+        page_token = None
+
+        q = "trashed=false " \
+            f"and 'me' in owners " + \
+            f"and name='{name}' "
+
+        while True:
+            response = service.files().list(q=q,
+                                            spaces='drive',
+                                            fields='nextPageToken, '
+                                                   'files(id, name, fullFileExtension, mimeType, parents)',
+                                            pageToken=page_token).execute()
+
+            files.extend(response.get('files', []))
+            page_token = response.get('nextPageToken', None)
+            if page_token is None:
+                break
+
+        if not files:
+            print("No such files")
+        for file in files:
+            print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, id: {file.get("id")}')
 
     except HttpError as error:
         print(F'An error occurred: {error}')
@@ -117,7 +170,7 @@ def get_id_from_name(service, name):
         return name
 
     try:
-        response = service.files().list(q="trashed=false"
+        response = service.files().list(q="trashed=false "
                                           f"and name='{name}'").execute()
 
         if not response.get('files', []):
@@ -136,8 +189,8 @@ def get_id_from_name(service, name):
 def make_q_parameters(name, extension, parent):
     q = ''
     if name != '':
-        q = q + f"and name contains '{name}.' "
-    if parent != 'all_folders':
+        q = q + f"and name='{name}' "
+    if parent != 'all':
         q = q + f"and '{parent}' in parents "
     if extension:
         q = q + f"and {extension} "
