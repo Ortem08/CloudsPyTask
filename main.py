@@ -48,8 +48,11 @@ def check(directory='all', files_type='any', name=''):
     if directory != 'all':
         possible_dirs = GoogleDrive.get_id_2(service, directory)
         if len(possible_dirs) > 1:
-            print('Multiple files found with the same name. Please specify the file ID.')
-            return
+            print('!!! Было найдено несколько папок с одинаковым именем. '
+                  'Уточнитните ID файла.')
+            concrete_id = input("ID: ")
+            print()
+            dir_id = GoogleDrive.get_id_2(service, directory, concrete_id)[0].get("id")
         elif not possible_dirs:
             print(f'No files found with the name: {name}')
             return

@@ -132,31 +132,37 @@ def get_path_for_file(service, file):
     return file_path
 
 
-def get_id_2(service, name):
+def get_id_2(service, name, concrete_id=None):
     try:
         files = []
         page_token = None
 
-        q = "trashed=false " \
+        q = f"trashed=false " + \
             f"and 'me' in owners " + \
             f"and name='{name}' "
-
+        response = {}
         while True:
-            response = service.files().list(q=q,
-                                            spaces='drive',
-                                            fields='nextPageToken, '
-                                                   'files(id, name, fullFileExtension, mimeType, parents)',
-                                            pageToken=page_token).execute()
+            if concrete_id:
+                response_list = [service.files().get(fileId=concrete_id).execute()]
+                response['files'] = response_list
+            else:
+                response = service.files().list(q=q,
+                                                spaces='drive',
+                                                fields='nextPageToken, '
+                                                       'files(id, name, fullFileExtension, mimeType, parents)',
+                                                pageToken=page_token).execute()
 
             files.extend(response.get('files', []))
+
             page_token = response.get('nextPageToken', None)
             if page_token is None:
                 break
 
         if not files:
             print("No such files")
-        for file in files:
-            print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, id: {file.get("id")}')
+        if len(files) > 1:
+            for file in files:
+                print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}')
 
     except HttpError as error:
         print(F'An error occurred: {error}')
