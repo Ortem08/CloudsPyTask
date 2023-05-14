@@ -44,17 +44,18 @@ def check(directory='all', files_type='any', name=''):
     list
         list of found files or None
     """
-    service = GoogleDrive.build_service(creds)
-    if directory != 'all':
-        possible_dirs = GoogleDrive.get_id_2(service, directory)
+    service = GoogleDrive.build_drive_service(creds)
+    if directory == 'root':
+        dir_id = directory
+    elif directory != 'all':
+        possible_dirs = GoogleDrive.get_file_info(service, directory, is_folder=True)
         if len(possible_dirs) > 1:
             print('!!! Было найдено несколько папок с одинаковым именем. '
-                  'Уточнитните ID файла.')
-            concrete_id = input("ID: ")
+                  'Уточнитните ID папки.')
+            dir_id = input("ID: ")
             print()
-            dir_id = GoogleDrive.get_id_2(service, directory, concrete_id)[0].get("id")
         elif not possible_dirs:
-            print(f'No files found with the name: {name}')
+            print(f'Не нашлось папок с именем: {directory}')
             return
         else:
             dir_id = possible_dirs[0].get('id')
@@ -67,26 +68,48 @@ def check(directory='all', files_type='any', name=''):
 
     files = GoogleDrive.search_files(service, dir_id,
                                      possible_extensions[files_type], name)
+    for file in files:
+        if "folder" in file.get("mimeType"):
+            print(F'Папка: {file.get("name")}, '
+                  F'путь: {GoogleDrive.get_path_for_file(service, file)}'+'\n')
+        else:
+            print(F'Файл: {file.get("name")}, '
+                  F'путь: {GoogleDrive.get_path_for_file(service, file)}'+'\n')
 
 
-def download_file(name):
-    service = GoogleDrive.build_service(creds)
-    file_id = GoogleDrive.get_id_from_name(service, name)
-
-
-def test(name):
-    service = GoogleDrive.build_service(creds)
-    files = GoogleDrive.get_id_2(service, name)
-    if len(files) > 1:
-        print('Multiple files found with the same name. Please specify the file ID.')
-        file_id = None
-    elif not files:
-        print(f'No files found with the name: {name}')
-        file_id = None
+def download(is_dir_str=None, name=None):
+    if is_dir_str == 'folder':
+        is_dir = True
+    elif is_dir_str == 'file':
+        is_dir = False
     else:
-        # Get the file ID
-        file_id = files[0].get('id')
-        print('File ID: {}'.format(file_id))
+        "Wrong command"
+        return
+    service = GoogleDrive.build_drive_service(creds)
+    possible_files = GoogleDrive.get_file_info(service, name, is_folder=is_dir)
+    desired_file = None
+    if len(possible_files) > 1:
+        print('!!! Было найдено несколько файлов/папок с одинаковым именем. '
+              'Уточнитните ID.')
+        file_id = input("ID: ")
+        for file in possible_files:
+            if file_id == file.get("id"):
+                desired_file = file
+                break
+        print()
+    elif not possible_files:
+        print(f'Не нашлось файлов/папок с именем: {name}')
+        return
+    else:
+        desired_file = possible_files[0]
+
+    if is_dir:
+        if GoogleDrive.download_folder(desired_file):
+            print("Folder downloaded")
+        else:
+            print("Smth went wrong")
+    else:
+        GoogleDrive.download_file(desired_file)
 
 
 if __name__ == '__main__':

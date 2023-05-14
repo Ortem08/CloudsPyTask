@@ -1,6 +1,6 @@
 import os.path
 import io
-import shutil
+import os
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -13,7 +13,7 @@ from googleapiclient.http import MediaIoBaseDownload
 SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
-def build_service(creds):
+def build_drive_service(creds):
     return build('drive', 'v3', credentials=creds)
 
 
@@ -39,42 +39,82 @@ def authorize():
     return creds
 
 
-def download_file(name, real_file_id=''):
+def download_file(file, creds=None, path=None):
     """Downloads a file
     Args:
-        real_file_id: ID of the file to download
-    Returns : IO object with location.
+        file: ID of the file to download
+        creds: authorization data for user
+        path: path for downloading file
+    Returns : String.
     """
-    creds = authorize()
+
+    if not creds:
+        creds = authorize()
+    if not path:
+        path = 'Downloads'
+    if not os.path.isdir(path):
+        os.mkdir(path)
 
     try:
-        # create drive api client
-        service = build('drive', 'v3', credentials=creds)
+        service = build_drive_service(creds)
 
-        file_id = real_file_id
-
-        # pylint: disable=maybe-no-member
-        request = service.files().get_media(fileId=file_id)
-        file = io.BytesIO()
-        downloader = MediaIoBaseDownload(file, request)
+        """if "spreadsheet" in file.get("mimeType"):
+            sheets_service = build_sheets_service(creds)
+            request = service.files().export_media(fileId=file.get("id"),
+                                                      mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        elif "document" in file.get("mimeType"):
+            docs_service = build_docs_service(creds)
+            request = service.files().export_media(fileId=file.get("id"),
+                                                    mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        else:"""
+        request = service.files().get_media(fileId=file.get("id"))
+        final_file = io.BytesIO()
+        downloader = MediaIoBaseDownload(final_file, request)
         done = False
         while done is False:
             status, done = downloader.next_chunk()
-            print(F'Downloaded {int(status.progress() * 100)}%.')
 
-        # file.seek(0)
-        # with open('TestFile.txt', 'wb') as f:
-        #    shutil.copyfileobj(file, f, length=1024)
+        final_file.seek(0)
+        with open(
+                f'{path}/{file.get("name")}',
+                'wb') as f:
+            f.write(final_file.getvalue())
 
     except HttpError as error:
         print(F'An error occurred: {error}')
-        file = None
-    file.seek(0)
-    return file
+
+    return f'{file.get("name")} downloaded'
 
 
-def search_files(service, directory_id, extension, name=''):
-    """Search file in drive location"""
+def download_folder(folder, creds=None, path=None):
+    if not creds:
+        creds = authorize()
+    if not path:
+        path = f'Downloads/{folder.get("name")}'
+    else:
+        path = path + '/' + folder.get("name")
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+    try:
+        service = build_drive_service(creds)
+        files = search_files(service, folder.get("id"))
+
+        for file in files:
+            if 'folder' in file.get("mimeType"):
+                download_folder(file, creds, path)
+            else:
+                download_file(file, creds, path)
+
+    except HttpError as error:
+        print(F'An error occurred: {error}')
+        return False
+
+    return True
+
+
+def search_files(service, directory_id, extension=None, name=''):
+    """Search files in drive location"""
 
     try:
         files = []
@@ -90,14 +130,6 @@ def search_files(service, directory_id, extension, name=''):
                                             fields='nextPageToken, '
                                                    'files(id, name, fullFileExtension, mimeType, parents)',
                                             pageToken=page_token).execute()
-
-            for file in response.get('files', []):
-                if "folder" in file.get("mimeType"):
-                    print(F'Папка: {file.get("name")}')
-                    print(F'путь: {get_path_for_file(service, file)}', end='\n\n')
-                else:
-                    print(F'Файл: {file.get("name")}')
-                    print(F'путь: {get_path_for_file(service, file)}', end='\n\n')
 
             files.extend(response.get('files', []))
             page_token = response.get('nextPageToken', None)
@@ -132,25 +164,24 @@ def get_path_for_file(service, file):
     return file_path
 
 
-def get_id_2(service, name, concrete_id=None):
+def get_file_info(service, name, is_folder=False):
     try:
         files = []
         page_token = None
 
-        q = f"trashed=false " + \
-            f"and 'me' in owners " + \
+        q = f"trashed=false " \
+            f"and 'me' in owners " \
             f"and name='{name}' "
-        response = {}
+
+        if is_folder:
+            q = q + f"and mimeType='application/vnd.google-apps.folder' "
+
         while True:
-            if concrete_id:
-                response_list = [service.files().get(fileId=concrete_id).execute()]
-                response['files'] = response_list
-            else:
-                response = service.files().list(q=q,
-                                                spaces='drive',
-                                                fields='nextPageToken, '
-                                                       'files(id, name, fullFileExtension, mimeType, parents)',
-                                                pageToken=page_token).execute()
+            response = service.files().list(q=q,
+                                            spaces='drive',
+                                            fields='nextPageToken, '
+                                                   'files(id, name, fullFileExtension, mimeType, parents)',
+                                            pageToken=page_token).execute()
 
             files.extend(response.get('files', []))
 
@@ -158,11 +189,12 @@ def get_id_2(service, name, concrete_id=None):
             if page_token is None:
                 break
 
-        if not files:
-            print("No such files")
         if len(files) > 1:
             for file in files:
-                print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}')
+                if 'folder' in file.get("mimeType"):
+                    print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}, Папка')
+                else:
+                    print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}, Файл')
 
     except HttpError as error:
         print(F'An error occurred: {error}')
@@ -171,35 +203,13 @@ def get_id_2(service, name, concrete_id=None):
     return files
 
 
-def get_id_from_name(service, name):
-    if name == 'root':
-        return name
-
-    try:
-        response = service.files().list(q="trashed=false "
-                                          f"and name='{name}'").execute()
-
-        if not response.get('files', []):
-            print(f"Wrong name: {name}")
-            return None
-
-        file = response.get('files', [])[0]
-
-    except HttpError as error:
-        print(F'An error occurred: {error}')
-        file = None
-
-    return file.get("id")
-
-
 def make_q_parameters(name, extension, parent):
     q = ''
     if name != '':
         q = q + f"and name='{name}' "
-    if parent != 'all':
-        q = q + f"and '{parent}' in parents "
     if extension:
         q = q + f"and {extension} "
+    if parent != 'all':
+        q = q + f"and '{parent}' in parents "
 
     return q
-
