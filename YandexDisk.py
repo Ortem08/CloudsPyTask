@@ -44,10 +44,10 @@ def upload_folder(savepath, loadpath):
 
 
 def search():
-    search_query = 'name="Story 1.docx"'
+    file_name = 'Горы.jpg'
 
     params = {
-        'fields': '_embedded.items.name,_embedded.items.path',
+        'fields': '_embedded.items.name,_embedded.items.path,_embedded.items.type, _embedded.items.resource_id',
         'type': 'file',
         'preview_crop': 'false',
         'preview_size': 'M',
@@ -55,20 +55,21 @@ def search():
         'offset': '0',
         'sort': 'name',
         'path': '/',
-        'sort_dir': 'asc',
+        'sort_dir': 'name',
         'preview_quality': 'normal',
         'preview_type': 'auto',
-        'resource': 'disk:resources/search',
-        'q': search_query
+        'resource': 'disk:resources'
     }
 
-    response = requests.get('https://cloud-api.yandex.net/v1/disk/resources/search',
+    response = requests.get('https://cloud-api.yandex.net/v1/disk/resources',
                             headers=headers, params=params)
     print(response.json())
-    for result in response.json()['_embedded']['items']:
-        file_name = result['name']
-        file_path = result['path']
-        print(f"Found file/folder: {file_name} Path: {file_path}")
+    file_id = None
+    for item in response.json()['_embedded']['items']:
+        if item['name'] == file_name:
+            file_id = item['resource_id']
+            print(f"ID файла '{file_name}': {file_id}")
+            break
 
 
 def main():
