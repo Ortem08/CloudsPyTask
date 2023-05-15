@@ -77,7 +77,23 @@ def check(directory='all', files_type='any', name=''):
                   F'путь: {GoogleDrive.get_path_for_file(service, file)}'+'\n')
 
 
-def download(is_dir_str=None, name=None):
+def download(is_dir_str=None, name='root'):
+    """
+    Downloads a file/folder with {name}
+    Parameters
+    ----------
+    is_dir_str : string
+        String that represents what you want to download: 'folder' or 'file'
+
+    name : string
+        String that represents the name of desired directory or file to
+        download
+
+    Returns
+    -------
+    nothing
+        prints 'folder downloaded' of '{filename} downloaded'
+    """
     if is_dir_str == 'folder':
         is_dir = True
     elif is_dir_str == 'file':
@@ -109,7 +125,7 @@ def download(is_dir_str=None, name=None):
         else:
             print("Smth went wrong")
     else:
-        GoogleDrive.download_file(desired_file)
+        print(GoogleDrive.download_file(desired_file))
 
 
 if __name__ == '__main__':

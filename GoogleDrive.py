@@ -142,6 +142,7 @@ def search_files(service, directory_id, extension=None, name=''):
     except HttpError as error:
         print(F'An error occurred: {error}')
         files = None
+
     return files
 
 
