@@ -181,7 +181,7 @@ def get_file_info(service, name, is_folder=False):
             response = service.files().list(q=q,
                                             spaces='drive',
                                             fields='nextPageToken, '
-                                                   'files(id, name, fullFileExtension, mimeType, parents)',
+                                                   'files(id, name, mimeType, parents)',
                                             pageToken=page_token).execute()
 
             files.extend(response.get('files', []))
@@ -240,9 +240,7 @@ def upload_folder(service, path, parents_id):
                                             fields='id').execute()
         else:
             folder = {'id': existing_folders[0].get('id')}
-        """else:
-            file = service.files().update(fileId=existing_files[0].get('id'),
-                                          media_body=media_content).execute()"""
+
         for element in os.listdir(path):
             file_path = os.path.join(path, element)
 

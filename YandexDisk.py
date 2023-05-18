@@ -5,7 +5,7 @@ from datetime import datetime
 
 URL = 'https://cloud-api.yandex.net/v1/disk/resources'
 TOKEN = 'y0_AgAAAAAcmCfkAAnoxwAAAADjPGamE13EKlY-TvW1eh6xotNaz58030o'
-headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': f'OAuth {TOKEN}'}
+headers = {'Authorization': f'OAuth {TOKEN}'}
 
 
 def create_folder(path):
@@ -44,37 +44,31 @@ def upload_folder(savepath, loadpath):
 
 
 def search():
-    file_name = 'Story 1.docx'
-
     params = {
-        'fields': '_embedded.items.name,_embedded.items.path,_embedded.items.type, _embedded.items.resource_id',
-        'type': 'file',
+        'fields': '_embedded.items.name, _embedded.items.path',
         'preview_crop': 'false',
         'preview_size': 'M',
-        'limit': '100',
-        'offset': '0',
         'sort': 'name',
-        'path': '/',
-        'sort_dir': 'name',
-        'preview_quality': 'normal',
-        'preview_type': 'auto',
-        'resource': 'disk:resources'
+        'path': '/'
     }
-
     response = requests.get('https://cloud-api.yandex.net/v1/disk/resources',
-                            headers=headers, params=params)
-    print(response.json())
-    file_id = None
-    for item in response.json()['_embedded']['items']:
-        if item['name'] == file_name:
-            file_id = item['resource_id']
-            print(f"ID файла '{file_name}': {file_id}")
-            break
-    print(requests.get("https://cloud-api.yandex.net/v1/disk/resources/files?fields=[path]", headers=headers, params=params).json())
+                            headers=headers, params=params).json()
+
+    return response.get('_embedded').get('items')
+
+
+def get_all_files():
+    params = {'limit': '10000',
+              'fields': 'items.name,items.type,items.path'}
+    response = requests.get('https://cloud-api.yandex.net/v1/disk/resources/files',
+                            headers=headers, params=params).json()
+    files = response.get('items')
+
+    return files
 
 
 def main():
-    search()
+    pass
 
 
 if __name__ == '__main__':

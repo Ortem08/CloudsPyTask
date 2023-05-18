@@ -2,6 +2,7 @@ import fire
 import os
 
 import GoogleDrive
+import YandexDisk
 
 possible_extensions = {'folder': 'mimeType="application/vnd.google-apps'
                                  '.folder"',
@@ -166,6 +167,17 @@ def upload(is_folder='folder', path='Backup'):
         print(f'Wrong parameter {is_folder}')
 
     print('All staff was uploaded successfully')
+
+
+def check_ya(name='root'):
+    if name == 'all':
+        files = YandexDisk.get_all_files()
+        for file in files:
+            print(f'Имя: {file.get("name")}, Путь: {file.get("path")}')
+    elif name == 'root':
+        files = YandexDisk.search()
+        for file in files:
+            print(f"Имя: {file.get('name')}, Путь: {file.get('path')}")
 
 
 if __name__ == '__main__':
