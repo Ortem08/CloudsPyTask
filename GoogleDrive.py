@@ -7,7 +7,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -136,9 +136,6 @@ def search_files(service, directory_id, extension=None, name=''):
             if page_token is None:
                 break
 
-        if not files:
-            print("No such files")
-
     except HttpError as error:
         print(F'An error occurred: {error}')
         files = None
@@ -171,8 +168,11 @@ def get_file_info(service, name, is_folder=False):
         page_token = None
 
         q = f"trashed=false " \
-            f"and 'me' in owners " \
-            f"and name='{name}' "
+            f"and 'me' in owners "
+        if name == 'root':
+            q = q + f"and 'root' in parents "
+        else:
+            q = q + f"and name='{name}' "
 
         if is_folder:
             q = q + f"and mimeType='application/vnd.google-apps.folder' "
@@ -193,15 +193,70 @@ def get_file_info(service, name, is_folder=False):
         if len(files) > 1:
             for file in files:
                 if 'folder' in file.get("mimeType"):
-                    print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}, Папка')
+                    print(
+                        F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}, Папка')
                 else:
-                    print(F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}, Файл')
+                    print(
+                        F'{file.get("name")}, путь: {get_path_for_file(service, file)}, ID: {file.get("id")}, Файл')
 
     except HttpError as error:
         print(F'An error occurred: {error}')
         files = None
 
     return files
+
+
+def upload_file(service, path, parents_id):
+    try:
+        name = os.path.basename(path)
+        file_meta = {'name': name, 'parents': [parents_id]}
+        media_content = MediaFileUpload(path)
+
+        existing_files = search_files(service, parents_id, name=name)
+        if len(existing_files) == 0:
+            service.files().create(body=file_meta,
+                                   media_body=media_content).execute()
+        else:
+            service.files().update(fileId=existing_files[0].get('id'),
+                                   media_body=media_content).execute()
+    except Exception as e:
+        print("Ошибка")
+        return False
+
+    print(f'File {name} successfully uploaded')
+    return True
+
+
+def upload_folder(service, path, parents_id):
+    try:
+        name = os.path.basename(path)
+        folder_meta = {'name': name,
+                       'mimeType': 'application/vnd.google-apps.folder',
+                       'parents': [parents_id]}
+
+        existing_folders = search_files(service, parents_id, extension='mimeType="application/vnd.google-apps.folder"', name=name)
+        if len(existing_folders) == 0:
+            folder = service.files().create(body=folder_meta,
+                                            fields='id').execute()
+        else:
+            folder = {'id': existing_folders[0].get('id')}
+        """else:
+            file = service.files().update(fileId=existing_files[0].get('id'),
+                                          media_body=media_content).execute()"""
+        for element in os.listdir(path):
+            file_path = os.path.join(path, element)
+
+            if os.path.isdir(file_path):
+                upload_folder(service, file_path, folder.get('id'))
+            else:
+                upload_file(service, file_path, folder.get('id'))
+
+    except Exception as e:
+        print("ОШИБКА")
+        return False
+
+    print(f'Folder {name} successfully uploaded')
+    return True
 
 
 def make_q_parameters(name, extension, parent):

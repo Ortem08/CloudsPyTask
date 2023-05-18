@@ -45,10 +45,12 @@ def check(directory='all', files_type='any', name=''):
         list of found files or None
     """
     service = GoogleDrive.build_drive_service(creds)
+
     if directory == 'root':
         dir_id = directory
     elif directory != 'all':
-        possible_dirs = GoogleDrive.get_file_info(service, directory, is_folder=True)
+        possible_dirs = GoogleDrive.get_file_info(service, directory,
+                                                  is_folder=True)
         if len(possible_dirs) > 1:
             print('!!! Было найдено несколько папок с одинаковым именем. '
                   'Уточнитните ID папки.')
@@ -68,16 +70,18 @@ def check(directory='all', files_type='any', name=''):
 
     files = GoogleDrive.search_files(service, dir_id,
                                      possible_extensions[files_type], name)
+    if len(files) == 0:
+        print("Нет файлов")
     for file in files:
         if "folder" in file.get("mimeType"):
             print(F'Папка: {file.get("name")}, '
-                  F'путь: {GoogleDrive.get_path_for_file(service, file)}'+'\n')
+                  F'путь: {GoogleDrive.get_path_for_file(service, file)}' + '\n')
         else:
             print(F'Файл: {file.get("name")}, '
-                  F'путь: {GoogleDrive.get_path_for_file(service, file)}'+'\n')
+                  F'путь: {GoogleDrive.get_path_for_file(service, file)}' + '\n')
 
 
-def download(is_dir_str=None, name='root'):
+def download(is_dir_str='folder', name='root'):
     """
     Downloads a file/folder with {name}
     Parameters
@@ -94,13 +98,15 @@ def download(is_dir_str=None, name='root'):
     nothing
         prints 'folder downloaded' of '{filename} downloaded'
     """
+
     if is_dir_str == 'folder':
         is_dir = True
     elif is_dir_str == 'file':
         is_dir = False
     else:
-        "Wrong command"
+        print(f"Wrong command {is_dir_str}")
         return
+
     service = GoogleDrive.build_drive_service(creds)
     possible_files = GoogleDrive.get_file_info(service, name, is_folder=is_dir)
     desired_file = None
@@ -126,6 +132,40 @@ def download(is_dir_str=None, name='root'):
             print("Smth went wrong")
     else:
         print(GoogleDrive.download_file(desired_file))
+
+
+def upload(is_folder='folder', path='Backup'):
+    """
+    Uploads a file/folder with {path}, {path} can be both absolute and relative
+    Parameters
+    ----------
+    is_folder : string
+        String that represents what you want to upload: 'folder' or 'file'
+
+    path : string
+        String that represents the path of desired directory or file to
+        download
+
+    Returns
+    -------
+    nothing
+        prints 'All staff downloaded successfully' if OK
+    """
+
+    if not os.path.exists(path):
+        print("Wrong way")
+        return
+
+    service = GoogleDrive.build_drive_service(creds)
+
+    if is_folder == 'file':
+        GoogleDrive.upload_file(service, path, 'root')
+    elif is_folder == 'folder':
+        GoogleDrive.upload_folder(service, path, 'root')
+    else:
+        print(f'Wrong parameter {is_folder}')
+
+    print('All staff was uploaded successfully')
 
 
 if __name__ == '__main__':

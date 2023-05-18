@@ -44,7 +44,7 @@ def upload_folder(savepath, loadpath):
 
 
 def search():
-    file_name = 'Горы.jpg'
+    file_name = 'Story 1.docx'
 
     params = {
         'fields': '_embedded.items.name,_embedded.items.path,_embedded.items.type, _embedded.items.resource_id',
@@ -70,6 +70,7 @@ def search():
             file_id = item['resource_id']
             print(f"ID файла '{file_name}': {file_id}")
             break
+    print(requests.get("https://cloud-api.yandex.net/v1/disk/resources/files?fields=[path]", headers=headers, params=params).json())
 
 
 def main():
