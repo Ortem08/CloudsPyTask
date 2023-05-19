@@ -1,3 +1,5 @@
+import re
+
 import requests
 import os
 from datetime import datetime
@@ -11,7 +13,9 @@ headers = {'Authorization': f'OAuth {TOKEN}'}
 def create_folder(path):
     """Создание папки.
     path: Путь к создаваемой папке на Диске"""
-    requests.put(f'{URL}?path={path}', headers=headers)
+
+    params = {'path': path}
+    requests.put(URL, headers=headers, params=params)
 
 
 def upload_file(path_source, path_result, replace=False):
@@ -43,13 +47,10 @@ def upload_folder(savepath, loadpath):
                         '{0}/{1}{2}/{3}'.format(savepath, date_folder, address.replace(loadpath, "").replace("\\", "/"), file), replace=True)
 
 
-def search():
+def search(path):
     params = {
-        'fields': '_embedded.items.name, _embedded.items.path',
-        'preview_crop': 'false',
-        'preview_size': 'M',
-        'sort': 'name',
-        'path': '/'
+        'fields': '_embedded.items.name, _embedded.items.path, _embedded.items.type',
+        'path': f'{path}'
     }
     response = requests.get('https://cloud-api.yandex.net/v1/disk/resources',
                             headers=headers, params=params).json()
@@ -57,18 +58,28 @@ def search():
     return response.get('_embedded').get('items')
 
 
-def get_all_files():
+def get_all_files(is_folder=False):
     params = {'limit': '10000',
               'fields': 'items.name,items.type,items.path'}
     response = requests.get('https://cloud-api.yandex.net/v1/disk/resources/files',
                             headers=headers, params=params).json()
     files = response.get('items')
 
+    if is_folder:
+        folders = set()
+        for file in files:
+            full_path = file.get('path')
+            folder_name = full_path.split('/')[-2]
+            folder_path = full_path[:full_path.rfind(folder_name)+len(folder_name)]
+            if folder_name != 'disk:':
+                folders.add((folder_name, folder_path))
+        return folders
+
     return files
 
 
 def main():
-    pass
+    get_all_files(True)
 
 
 if __name__ == '__main__':

@@ -1,35 +1,17 @@
 import fire
 import os
 
+from googleapiclient.errors import HttpError
+
 import GoogleDrive
 import YandexDisk
+import CloudsHandler
 
-possible_extensions = {'folder': 'mimeType="application/vnd.google-apps'
-                                 '.folder"',
-                       'text': '(mimeType="text/plain" or '
-                               'mimeType="application/pdf" or '
-                               'mimeType="application/msword" or '
-                               'mimeType="application/vnd.openxmlformats'
-                               '-officedocument.wordprocessingml.document")',
-                       'table':
-                           '(mimeType="application/vnd.openxmlformats'
-                           '-officedocument.spreadsheetml.sheet" or '
-                           'mimeType="application/vnd.google-apps'
-                           '.spreadsheet" or '
-                           'mimeType="application/vnd.ms-excel")',
-                       'audio': 'mimeType contains "audio/"',
-                       'video': 'mimeType contains "video/"',
-                       'image': 'mimeType contains "image/"',
-                       'any': '(mimeType contains "text/" or mimeType '
-                              'contains "audio/" or mimeType contains '
-                              '"video/" or mimeType contains "image/" or '
-                              'mimeType contains "application/")'
-                       }
 
 creds = GoogleDrive.authorize()
 
 
-def check(directory='all', files_type='any', name=''):
+def check(directory='root'):
     """
     Returns a list of user's files from concrete directory on GDrive
     Parameters
@@ -45,41 +27,25 @@ def check(directory='all', files_type='any', name=''):
     list
         list of found files or None
     """
-    service = GoogleDrive.build_drive_service(creds)
-
-    if directory == 'root':
-        dir_id = directory
-    elif directory != 'all':
-        possible_dirs = GoogleDrive.get_file_info(service, directory,
-                                                  is_folder=True)
-        if len(possible_dirs) > 1:
-            print('!!! Было найдено несколько папок с одинаковым именем. '
-                  'Уточнитните ID папки.')
-            dir_id = input("ID: ")
-            print()
-        elif not possible_dirs:
-            print(f'Не нашлось папок с именем: {directory}')
+    print("Подождите, выполняется поиск файлов и папок, это может занять некотрое время"+'\n')
+    try:
+        files = CloudsHandler.check_google(directory)
+    except Exception:
+        try:
+            files = CloudsHandler.check_yandex(directory)
+        except Exception:
+            print("THATS WASSUP BRO, NOTHING THERE")
             return
-        else:
-            dir_id = possible_dirs[0].get('id')
-    else:
-        dir_id = 'all'
 
-    if files_type not in possible_extensions:
-        print(f"Unsupported extension: {files_type}")
-        return
-
-    files = GoogleDrive.search_files(service, dir_id,
-                                     possible_extensions[files_type], name)
     if len(files) == 0:
         print("Нет файлов")
     for file in files:
-        if "folder" in file.get("mimeType"):
+        if (file.get('type') == 'dir') or ('folder' in str(file.get('mimeType'))):
             print(F'Папка: {file.get("name")}, '
-                  F'путь: {GoogleDrive.get_path_for_file(service, file)}' + '\n')
+                  F'путь: {file.get("path")}' + '\n')
         else:
             print(F'Файл: {file.get("name")}, '
-                  F'путь: {GoogleDrive.get_path_for_file(service, file)}' + '\n')
+                  F'путь: {file.get("path")}' + '\n')
 
 
 def download(is_dir_str='folder', name='root'):
@@ -167,17 +133,6 @@ def upload(is_folder='folder', path='Backup'):
         print(f'Wrong parameter {is_folder}')
 
     print('All staff was uploaded successfully')
-
-
-def check_ya(name='root'):
-    if name == 'all':
-        files = YandexDisk.get_all_files()
-        for file in files:
-            print(f'Имя: {file.get("name")}, Путь: {file.get("path")}')
-    elif name == 'root':
-        files = YandexDisk.search()
-        for file in files:
-            print(f"Имя: {file.get('name')}, Путь: {file.get('path')}")
 
 
 if __name__ == '__main__':

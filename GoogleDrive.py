@@ -136,6 +136,9 @@ def search_files(service, directory_id, extension=None, name=''):
             if page_token is None:
                 break
 
+        for file in files:
+            file['path'] = get_path_for_file(service, file)
+
     except HttpError as error:
         print(F'An error occurred: {error}')
         files = None
