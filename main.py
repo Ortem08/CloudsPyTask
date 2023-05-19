@@ -33,7 +33,7 @@ def check(directory='root'):
     except Exception:
         try:
             files = CloudsHandler.check_yandex(directory)
-        except Exception:
+        except Exception as e:
             print("THATS WASSUP BRO, NOTHING THERE")
             return
 
@@ -74,31 +74,14 @@ def download(is_dir_str='folder', name='root'):
         print(f"Wrong command {is_dir_str}")
         return
 
-    service = GoogleDrive.build_drive_service(creds)
-    possible_files = GoogleDrive.get_file_info(service, name, is_folder=is_dir)
-    desired_file = None
-    if len(possible_files) > 1:
-        print('!!! Было найдено несколько файлов/папок с одинаковым именем. '
-              'Уточнитните ID.')
-        file_id = input("ID: ")
-        for file in possible_files:
-            if file_id == file.get("id"):
-                desired_file = file
-                break
-        print()
-    elif not possible_files:
-        print(f'Не нашлось файлов/папок с именем: {name}')
-        return
-    else:
-        desired_file = possible_files[0]
-
-    if is_dir:
-        if GoogleDrive.download_folder(desired_file):
-            print("Folder downloaded")
-        else:
-            print("Smth went wrong")
-    else:
-        print(GoogleDrive.download_file(desired_file))
+    try:
+        CloudsHandler.download_google(creds, is_dir, name)
+    except Exception:
+        try:
+            CloudsHandler.download_yandex(is_dir, name)
+        except Exception:
+            print("WTF BROO??!!")
+            return
 
 
 def upload(is_folder='folder', path='Backup'):

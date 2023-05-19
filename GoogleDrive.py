@@ -58,15 +58,6 @@ def download_file(file, creds=None, path=None):
     try:
         service = build_drive_service(creds)
 
-        """if "spreadsheet" in file.get("mimeType"):
-            sheets_service = build_sheets_service(creds)
-            request = service.files().export_media(fileId=file.get("id"),
-                                                      mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        elif "document" in file.get("mimeType"):
-            docs_service = build_docs_service(creds)
-            request = service.files().export_media(fileId=file.get("id"),
-                                                    mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        else:"""
         request = service.files().get_media(fileId=file.get("id"))
         final_file = io.BytesIO()
         downloader = MediaIoBaseDownload(final_file, request)
@@ -98,7 +89,7 @@ def download_folder(folder, creds=None, path=None):
 
     try:
         service = build_drive_service(creds)
-        files = search_files(service, folder.get("id"))
+        files = search(service, folder.get("id"))
 
         for file in files:
             if 'folder' in file.get("mimeType"):
@@ -113,7 +104,7 @@ def download_folder(folder, creds=None, path=None):
     return True
 
 
-def search_files(service, directory_id, extension=None, name=''):
+def search(service, directory_id, extension=None, name=''):
     """Search files in drive location"""
 
     try:
@@ -215,7 +206,7 @@ def upload_file(service, path, parents_id):
         file_meta = {'name': name, 'parents': [parents_id]}
         media_content = MediaFileUpload(path)
 
-        existing_files = search_files(service, parents_id, name=name)
+        existing_files = search(service, parents_id, name=name)
         if len(existing_files) == 0:
             service.files().create(body=file_meta,
                                    media_body=media_content).execute()
@@ -237,7 +228,7 @@ def upload_folder(service, path, parents_id):
                        'mimeType': 'application/vnd.google-apps.folder',
                        'parents': [parents_id]}
 
-        existing_folders = search_files(service, parents_id, extension='mimeType="application/vnd.google-apps.folder"', name=name)
+        existing_folders = search(service, parents_id, extension='mimeType="application/vnd.google-apps.folder"', name=name)
         if len(existing_folders) == 0:
             folder = service.files().create(body=folder_meta,
                                             fields='id').execute()

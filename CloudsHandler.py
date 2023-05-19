@@ -22,32 +22,84 @@ def check_google(directory='all'):
         else:
             dir_id = possible_dirs[0].get('id')
 
-    return GoogleDrive.search_files(service, dir_id)
+    return GoogleDrive.search(service, dir_id)
 
 
 def check_yandex(directory='all'):
     if directory == 'all':
-        files = YandexDisk.get_all_files()
+        files = YandexDisk.get_file_info()
     elif directory == 'root':
         files = YandexDisk.search('/')
     else:
-        all_folders = YandexDisk.get_all_files(True)
-        possible_dirs = []
-        for folder in all_folders:
-            if folder[0] == directory:
-                possible_dirs.append(folder)
+        possible_dirs = YandexDisk.get_file_info(directory, is_folder=True)
 
         if len(possible_dirs) > 1:
             for pos_dir in possible_dirs:
-                print(f"{pos_dir[0]}, путь: {pos_dir[1]}")
+                print(f"{pos_dir.get('name')}, путь: {pos_dir.get('path')}")
             print('!!! Было найдено несколько папок с одинаковым именем. '
-                  'Уточнитните ID папки.')
+                  'Уточнитните путь папки.')
             desired_path = input("Путь: ")
         elif len(possible_dirs) == 0:
             raise NotImplementedError
         else:
-            desired_path = possible_dirs[0][1]
+            desired_path = possible_dirs[0].get('path')
 
         files = YandexDisk.search(desired_path)
 
     return files
+
+
+def download_google(creds, is_dir, name):
+    service = GoogleDrive.build_drive_service(creds)
+    possible_files = GoogleDrive.get_file_info(service, name, is_folder=is_dir)
+    desired_file = None
+    if len(possible_files) > 1:
+        print('!!! Было найдено несколько файлов/папок с одинаковым именем. '
+              'Уточнитните ID.')
+        file_id = input("ID: ")
+        for file in possible_files:
+            if file_id == file.get("id"):
+                desired_file = file
+                break
+        print()
+    elif not possible_files:
+        print(f'Не нашлось файлов/папок с именем: {name}')
+        return
+    else:
+        desired_file = possible_files[0]
+
+    if is_dir:
+        if GoogleDrive.download_folder(desired_file):
+            print("Folder downloaded")
+        else:
+            print("Smth went wrong")
+    else:
+        print(GoogleDrive.download_file(desired_file))
+
+
+def download_yandex(is_dir, name):
+    possible_files = YandexDisk.get_file_info(name, is_dir)
+    desired_file = None
+
+    if len(possible_files) > 1:
+        print('!!! Было найдено несколько файлов/папок с одинаковым именем. '
+              'Уточнитните путь.')
+        file_id = input("Путь: ")
+        for file in possible_files:
+            if file_id == file.get("path"):
+                desired_file = file
+                break
+        print()
+    elif not possible_files:
+        print(f'Не нашлось файлов/папок с именем: {name}')
+        return
+    else:
+        desired_file = possible_files[0]
+
+    if is_dir:
+        if YandexDisk.download_folder(desired_file):
+            print("Folder downloaded")
+        else:
+            print("Smth went wrong")
+    else:
+        print(YandexDisk.download_file(desired_file))

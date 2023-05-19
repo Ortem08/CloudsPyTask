@@ -1,3 +1,4 @@
+import json
 import re
 
 import requests
@@ -58,29 +59,84 @@ def search(path):
     return response.get('_embedded').get('items')
 
 
-def get_all_files(is_folder=False):
+def get_file_info(name=None, is_folder=False):
     params = {'limit': '10000',
               'fields': 'items.name,items.type,items.path'}
     response = requests.get('https://cloud-api.yandex.net/v1/disk/resources/files',
                             headers=headers, params=params).json()
     files = response.get('items')
+    result = []
+
+    if not is_folder and not name:
+        result = files
 
     if is_folder:
-        folders = set()
+        files = get_all_folders(files)
+
+    if name and not is_folder:
         for file in files:
-            full_path = file.get('path')
-            folder_name = full_path.split('/')[-2]
-            folder_path = full_path[:full_path.rfind(folder_name)+len(folder_name)]
-            if folder_name != 'disk:':
-                folders.add((folder_name, folder_path))
-        return folders
+            if file.get('name') == name:
+                result.append(file)
+    elif name and is_folder:
+        for file in files:
+            decoded = json.loads(file)
+            if decoded.get('name') == name:
+                result.append(decoded)
 
-    return files
+    if len(result) > 1:
+        for file in result:
+            if 'dir' in file.get("type"):
+                print(
+                    F'{file.get("name")}, путь: {file.get("path")}, Папка')
+            else:
+                print(
+                    F'{file.get("name")}, путь: {file.get("path")}, Файл')
+
+    return result
 
 
-def main():
-    get_all_files(True)
+def get_all_folders(files):
+    folders = set()
+    for file in files:
+        full_path = file.get('path')
+        folder_name = full_path.split('/')[-2]
+        folder_path = full_path[
+                      :full_path.rfind(folder_name) + len(folder_name)]
+        if folder_name != 'disk:':
+            folder = {'name': folder_name, 'path': folder_path, 'type': 'dir'}
+            folders.add(json.dumps(folder))
+
+    return folders
 
 
-if __name__ == '__main__':
-    main()
+def download_file(file, path=None):
+    if not path:
+        path = 'Downloads'
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+    request = requests.get(f'https://cloud-api.yandex.net/v1/disk/resources/download?path={file.get("path")}', headers=headers)
+    download_url = request.json()['href']
+
+    download_response = requests.get(download_url)
+    with open(f'{path}/{file.get("name")}', 'wb') as f:
+        f.write(download_response.content)
+
+
+def download_folder(folder, path=None):
+    if not path:
+        path = f'Downloads/{folder.get("name")}'
+    else:
+        path = path + '/' + folder.get("name")
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+    files = search(folder.get("path"))
+
+    for file in files:
+        if 'dir' in file.get("type"):
+            download_folder(file, path)
+        else:
+            download_file(file, path)
+
+    return True
