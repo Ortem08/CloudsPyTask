@@ -75,7 +75,7 @@ def download(is_dir_str='folder', name='root'):
         return
 
     try:
-        CloudsHandler.download_google(creds, is_dir, name)
+        raise Exception
     except Exception:
         try:
             CloudsHandler.download_yandex(is_dir, name)
@@ -106,14 +106,15 @@ def upload(is_folder='folder', path='Backup'):
         print("Wrong way")
         return
 
-    service = GoogleDrive.build_drive_service(creds)
-
-    if is_folder == 'file':
-        GoogleDrive.upload_file(service, path, 'root')
-    elif is_folder == 'folder':
-        GoogleDrive.upload_folder(service, path, 'root')
-    else:
-        print(f'Wrong parameter {is_folder}')
+    try:
+        CloudsHandler.upload_google(creds=creds, is_folder=is_folder, path=path)
+    except Exception:
+        try:
+            CloudsHandler.upload_yandex(is_folder, path)
+        except Exception as e:
+            print(e)
+            print("HOLY FUCK I DUNNO WHATAHECK")
+            return
 
     print('All staff was uploaded successfully')
 

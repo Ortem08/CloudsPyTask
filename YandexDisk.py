@@ -24,14 +24,21 @@ def upload_file(path_source, path_result, replace=False):
     path_result: Путь к файлу на Диске
     path_source: Путь к загружаемому файлу на компе
     replace: true or false Замена файла на Диске"""
-    res = requests.get(f'{URL}/upload?path={path_result}&overwrite={replace}',
-                       headers=headers).json()
+    params = {
+        'path': f'{path_result}{os.path.basename(path_source)}',
+        'overwrite': replace
+    }
+
+    res = requests.get(f'{URL}/upload',
+                       headers=headers, params=params).json()
 
     with open(path_source, 'rb') as f:
         try:
-            requests.put(res['href'], files={'file':f})
+            requests.put(res['href'], files={'file': f})
         except KeyError:
             print(res)
+            return
+        print(f'File {os.path.basename(path_source)} uploaded successfully')
 
 
 def upload_folder(savepath, loadpath):
@@ -39,13 +46,20 @@ def upload_folder(savepath, loadpath):
      savepath: Путь к папке на Диске
      loadpath: Путь к загружаемой папке на компе"""
 
-    date_folder = '{0}_{1}'.format(loadpath.split('\\')[-1], datetime.now().strftime("%Y"))
-    create_folder(savepath)
+    date_folder = os.path.basename(loadpath)
+
     for address, _, files in os.walk(loadpath):
-        create_folder('{0}/{1}/{2}'.format(savepath, date_folder, address.replace(loadpath, "")[1:].replace("\\", "/")))
-        for file in files:
-            upload_file('{0}\{1}'.format(address, file),
-                        '{0}/{1}{2}/{3}'.format(savepath, date_folder, address.replace(loadpath, "").replace("\\", "/"), file), replace=True)
+        try:
+            folder_name = address.replace(loadpath, "")[1:].replace("\\", "/")
+            create_folder(F'{savepath}/{date_folder}/{folder_name}')
+            for file in files:
+                path_to_folder = address.replace(loadpath, "").replace("\\", "/")
+                upload_file(f'{address}/{file}',
+                            f'{savepath}/{date_folder}{path_to_folder}/{file}', replace=True)
+        except Exception:
+            print('Can`t download')
+            return
+        print(f'Folder {os.path.basename(address)} uploaded successfully')
 
 
 def search(path):

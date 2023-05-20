@@ -103,3 +103,23 @@ def download_yandex(is_dir, name):
             print("Smth went wrong")
     else:
         print(YandexDisk.download_file(desired_file))
+
+
+def upload_google(creds, is_folder, path):
+    service = GoogleDrive.build_drive_service(creds)
+
+    if is_folder == 'file':
+        GoogleDrive.upload_file(service, path, 'root')
+    elif is_folder == 'folder':
+        GoogleDrive.upload_folder(service, path, 'root')
+    else:
+        print(f'Wrong parameter {is_folder}')
+
+
+def upload_yandex(is_folder, path):
+    if is_folder == 'file':
+        YandexDisk.upload_file(path_result='/', path_source=path, replace=True)
+    elif is_folder == 'folder':
+        YandexDisk.upload_folder(savepath='', loadpath=path)
+    else:
+        print(f'Wrpng parameter {is_folder}')
