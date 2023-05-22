@@ -4,7 +4,6 @@ import os
 from googleapiclient.errors import HttpError
 
 import GoogleDrive
-import YandexDisk
 import CloudsHandler
 
 
@@ -27,20 +26,22 @@ def check(directory='root'):
     list
         list of found files or None
     """
-    print("Подождите, выполняется поиск файлов и папок, это может занять некотрое время"+'\n')
+    print("Подождите, выполняется поиск файлов и папок, это может занять "
+          "некотрое время"+'\n')
     try:
         files = CloudsHandler.check_google(directory)
     except Exception:
         try:
             files = CloudsHandler.check_yandex(directory)
-        except Exception as e:
+        except Exception:
             print("THATS WASSUP BRO, NOTHING THERE")
             return
 
     if len(files) == 0:
         print("Нет файлов")
     for file in files:
-        if (file.get('type') == 'dir') or ('folder' in str(file.get('mimeType'))):
+        if (file.get('type') == 'dir') or \
+                ('folder' in str(file.get('mimeType'))):
             print(F'Папка: {file.get("name")}, '
                   F'путь: {file.get("path")}' + '\n')
         else:
@@ -75,7 +76,7 @@ def download(is_dir_str='folder', name='root'):
         return
 
     try:
-        raise Exception
+        CloudsHandler.download_google(creds, is_dir, name)
     except Exception:
         try:
             CloudsHandler.download_yandex(is_dir, name)
@@ -86,7 +87,8 @@ def download(is_dir_str='folder', name='root'):
 
 def upload(is_folder='folder', path='Backup'):
     """
-    Uploads a file/folder with {path}, {path} can be both absolute and relative
+    Uploads a file/folder with {path},
+    {path} can be both absolute and relative
     Parameters
     ----------
     is_folder : string
@@ -107,7 +109,8 @@ def upload(is_folder='folder', path='Backup'):
         return
 
     try:
-        CloudsHandler.upload_google(creds=creds, is_folder=is_folder, path=path)
+        CloudsHandler.upload_google(creds=creds, is_folder=is_folder,
+                                    path=path)
     except Exception:
         try:
             CloudsHandler.upload_yandex(is_folder, path)

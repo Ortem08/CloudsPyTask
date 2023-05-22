@@ -1,0 +1,17 @@
+@echo off
+
+REM Get the current directory
+set "script_dir=%~dp0"
+
+REM Define the name and path of the batch file to be added to PATH
+set "batch_file_name=check.bat"
+set "batch_file_path=%script_dir%%batch_file_name%"
+
+echo %batch_file_path%
+
+REM Create a Registry entry to add the script directory to PATH
+set PATH=%batch_file_path%;%PATH%
+
+
+REM Pause the script to let the user read the message
+pause >nul
