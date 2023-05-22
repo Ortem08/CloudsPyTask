@@ -20,8 +20,7 @@ def get_all_folders(files):
 class YandexDisk:
     def __init__(self):
         self.URL = 'https://cloud-api.yandex.net/v1/disk/resources'
-        self.TOKEN = 'y0_AgAAAAAcmCfkAAnoxwAAAADjPGamE13EKlY' \
-                     '-TvW1eh6xotNaz58030o'
+        self.TOKEN = ''
         self.headers = {'Authorization': f'OAuth {self.TOKEN}'}
 
     def create_folder(self, path):
@@ -53,23 +52,23 @@ class YandexDisk:
             print(f'File {os.path.basename(path_source)} '
                   f'uploaded successfully')
 
-    def upload_folder(self, savepath, loadpath):
+    def upload_folder(self, save_path, load_path):
         """Загрузка папки на Диск.
-         savepath: Путь к папке на Диске
-         loadpath: Путь к загружаемой папке на компе"""
+         save_path: Путь к папке на Диске
+         load_path: Путь к загружаемой папке на компе"""
 
-        date_folder = os.path.basename(loadpath)
+        date_folder = os.path.basename(load_path)
 
-        for address, _, files in os.walk(loadpath):
+        for address, _, files in os.walk(load_path):
             try:
-                folder_name = address.replace(loadpath, "")[1:] \
+                folder_name = address.replace(load_path, "")[1:] \
                     .replace("\\", "/")
-                self.create_folder(F'{savepath}/{date_folder}/{folder_name}')
+                self.create_folder(F'{save_path}/{date_folder}/{folder_name}')
                 for file in files:
-                    path_to_folder = address.replace(loadpath, "") \
+                    path_to_folder = address.replace(load_path, "") \
                         .replace("\\", "/")
                     self.upload_file(f'{address}/{file}',
-                                     f'{savepath}/{date_folder}'
+                                     f'{save_path}/{date_folder}'
                                      f'{path_to_folder}/{file}', replace=True)
             except Exception:
                 print('Can`t download')
