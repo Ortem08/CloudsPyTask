@@ -8,6 +8,8 @@ class CloudsHandler:
         self.yandex = YandexDisk()
 
     def check_google(self, directory='all'):
+        """Displays files in the given directory
+           Returns: List of files"""
         if directory == 'all':
             dir_id = 'all'
         elif directory == 'root':
@@ -28,6 +30,8 @@ class CloudsHandler:
         return self.google.search(directory_id=dir_id)
 
     def check_yandex(self, directory='all'):
+        """Displays files in the given directory
+           Returns: List of files"""
         if directory == 'all':
             files = self.yandex.get_file_info()
         elif directory == 'root':
@@ -53,6 +57,12 @@ class CloudsHandler:
         return files
 
     def download_google(self, is_dir, name):
+        """Downloads a file or a folder
+        Args:
+            is_dir: Does selected object is folder?
+            name: name of the selected file of folder
+        Returns : Nothing
+        """
         possible_files = self.google.get_file_info(name=name, is_folder=is_dir)
         desired_file = None
         if len(possible_files) > 1:
@@ -80,6 +90,12 @@ class CloudsHandler:
             print(self.google.download_file(file=desired_file))
 
     def download_yandex(self, is_dir, name):
+        """Downloads a file or a folder
+        Args:
+            is_dir: Does selected object is folder?
+            name: name of the selected file of folder
+        Returns : Nothing
+        """
         possible_files = self.yandex.get_file_info(name, is_dir)
         desired_file = None
 
@@ -108,6 +124,12 @@ class CloudsHandler:
             print(self.yandex.download_file(desired_file))
 
     def upload_google(self, is_folder, path):
+        """Downloads a file or a folder
+        Args:
+            is_folder: Does selected object is folder?
+            path: path to the uploaded file or folder
+        Returns : Nothing
+        """
         if is_folder == 'file':
             self.google.upload_file(path=path, parents_id='root')
         elif is_folder == 'folder':
@@ -116,6 +138,12 @@ class CloudsHandler:
             print(f'Wrong parameter {is_folder}')
 
     def upload_yandex(self, is_folder, path):
+        """Downloads a file or a folder
+        Args:
+            is_folder: Does selected object is folder?
+            path: path to the uploaded file or folder
+        Returns : Nothing
+        """
         if is_folder == 'file':
             self.yandex.upload_file(path_result='/', path_source=path,
                                     replace=True)

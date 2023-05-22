@@ -14,11 +14,12 @@ SCOPES = ['https://www.googleapis.com/auth/drive']
 
 
 def authorize():
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
+    """The file token.json stores the user's access and refresh tokens, and is
+     created automatically when the authorization flow completes for the first
+     time.
+    Returns : Credentials
+    """
     creds = None
-
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
@@ -36,6 +37,7 @@ def authorize():
 
 
 def make_q_parameters(name, extension, parent):
+    """Sets a searching filter"""
     q = ''
     if name != '':
         q = q + f"and name='{name}' "
@@ -48,6 +50,13 @@ def make_q_parameters(name, extension, parent):
 
 
 def get_path_for_file(service, file):
+    """Find path of the selected file
+    Args:
+        service: builds a service,
+        - using this object we can interact with Google Drive
+        file: json object describing the desired file
+    Returns : String
+    """
     # Get the parent folder IDs
     parent_ids = file.get("parents")
 
@@ -69,16 +78,14 @@ def get_path_for_file(service, file):
 
 class GoogleDrive:
     def __init__(self):
+        """Initializing the GoogleDrive class"""
         self._creds = authorize()
         self.service = build('drive', 'v3', credentials=self._creds)
-
-    def build_drive_service(self):
-        return build('drive', 'v3', credentials=self._creds)
 
     def download_file(self, file, path=None):
         """Downloads a file
         Args:
-            file: ID of the file to download
+            file: json object describing the desired file
             path: path for downloading file
         Returns : String.
         """
@@ -110,6 +117,13 @@ class GoogleDrive:
         return f'{file.get("name")} downloaded'
 
     def download_folder(self, folder, path=None):
+        """Downloads a folder
+           Args:
+               folder: json object describing the desired folder
+               path: path for downloading folder
+           Returns : True/False
+           - Whether it was possible to load the folder or not
+        """
         if not self._creds:
             self._creds = authorize()
         if not path:
@@ -135,8 +149,13 @@ class GoogleDrive:
         return True
 
     def search(self, directory_id, extension=None, name=''):
-        """Search files in drive location"""
-
+        """Search files in drive location
+           Args:
+               directory_id: ID of the selected directory
+               extension: Type of the object that we want to find
+               name: Name of the file or folder
+           Returns : List of files
+        """
         try:
             files = []
             page_token = None
@@ -170,6 +189,12 @@ class GoogleDrive:
         return files
 
     def get_file_info(self, name, is_folder=False):
+        """Give information about the file(s) with the given name
+           Args:
+               name: Name of the file or folder
+               is_folder: Does selected object is folder?
+           Returns : List of files with selected name
+        """
         try:
             files = []
             page_token = None
@@ -218,6 +243,13 @@ class GoogleDrive:
         return files
 
     def upload_file(self, path, parents_id):
+        """Upload file to the selected directory
+           Args:
+               path: path to the file on computer
+               parents_id: ID of folder where you want to upload the file
+           Returns : True/False
+           - Whether it was possible to upload file or not
+        """
         try:
             name = os.path.basename(path)
             file_meta = {'name': name, 'parents': [parents_id]}
@@ -230,7 +262,7 @@ class GoogleDrive:
             else:
                 self.service.files().update(fileId=existing_files[0].get('id'),
                                             media_body=media_content).execute()
-        except Exception as e:
+        except Exception:
             print("Ошибка")
             return False
 
@@ -238,6 +270,13 @@ class GoogleDrive:
         return True
 
     def upload_folder(self, path, parents_id):
+        """Upload folder to the selected directory
+           Args:
+               path: path to the folder where you want to upload the folder
+               parents_id: ID of folder where you want to upload the file
+           Returns : True/False
+           - Whether it was possible to upload folder or not
+        """
         try:
             name = os.path.basename(path)
             folder_meta = {'name': name,
@@ -266,7 +305,7 @@ class GoogleDrive:
                     self.upload_file(path=file_path,
                                      parents_id=folder.get('id'))
 
-        except Exception as e:
+        except Exception:
             print("ОШИБКА")
             return False
 

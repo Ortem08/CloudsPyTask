@@ -4,6 +4,7 @@ import os
 
 
 def get_all_folders(files):
+    """Вывод всех папок на Диске"""
     folders = set()
     for file in files:
         full_path = file.get('path')
@@ -19,8 +20,12 @@ def get_all_folders(files):
 
 class YandexDisk:
     def __init__(self):
+        """Инициализация класса YandexDisk
+        Проверьте, что self.TOKEN соответствует имеено ВАШЕМУ токену"""
+
         self.URL = 'https://cloud-api.yandex.net/v1/disk/resources'
-        self.TOKEN = ''
+        self.TOKEN = 'y0_AgAAAAAX419AAAnoxwAAAADjPIe21IqyXBZdS' \
+                     'qGTURHTjFBpBZSUbFA'
         self.headers = {'Authorization': f'OAuth {self.TOKEN}'}
 
     def create_folder(self, path):
@@ -33,8 +38,9 @@ class YandexDisk:
     def upload_file(self, path_source, path_result, replace=False):
         """Загрузка файла.
         path_result: Путь к файлу на Диске
-        path_source: Путь к загружаемому файлу на компе
-        replace: true or false Замена файла на Диске"""
+        path_source: Путь к загружаемому файлу на компьютере
+        replace: True или False - Замена файла на Диске при конфликте"""
+
         params = {
             'path': f'{path_result}{os.path.basename(path_source)}',
             'overwrite': replace
@@ -55,7 +61,7 @@ class YandexDisk:
     def upload_folder(self, save_path, load_path):
         """Загрузка папки на Диск.
          save_path: Путь к папке на Диске
-         load_path: Путь к загружаемой папке на компе"""
+         load_path: Путь к загружаемой папке на компьютере"""
 
         date_folder = os.path.basename(load_path)
 
@@ -76,6 +82,9 @@ class YandexDisk:
             print(f'Folder {os.path.basename(address)} uploaded successfully')
 
     def search(self, path):
+        """Поиск файлов в указанной директории
+         path: Путь к директории, в которой будет производится поиск"""
+
         params = {
             'fields': '_embedded.items.name, _embedded.items.path, '
                       '_embedded.items.type',
@@ -83,10 +92,13 @@ class YandexDisk:
         }
         res = requests.get(self.URL,
                            headers=self.headers, params=params).json()
-
         return res.get('_embedded').get('items')
 
     def get_file_info(self, name=None, is_folder=False):
+        """Поиск информации о файле(-ах) с указанными именем
+         name: Имя разыскиваемого файла или папки
+         is_folder: Является ли разыскиваемый объект папкой?"""
+
         params = {'limit': '10000',
                   'fields': 'items.name,items.type,items.path'}
         res = requests.get(f'{self.URL}/files',
@@ -122,6 +134,9 @@ class YandexDisk:
         return result
 
     def download_file(self, file, path=None):
+        """Скачивание выбранного файла на компьютер
+         file: json объект, описывающий желаемый файл
+         path: Путь к загружаемому файлу"""
         if not path:
             path = 'Downloads'
         if not os.path.isdir(path):
@@ -137,6 +152,9 @@ class YandexDisk:
             f.write(download_response.content)
 
     def download_folder(self, folder, path=None):
+        """Скачивание выбранной папки на компьютер
+         folder: json объект, описывающий желаемую папку
+         path: Путь к загружаемой папке"""
         if not path:
             path = f'Downloads/{folder.get("name")}'
         else:
