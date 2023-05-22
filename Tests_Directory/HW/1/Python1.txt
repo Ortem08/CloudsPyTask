@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+
+
+def long_division(dividend, divider):
+    '''
+    Вернуть строку с процедурой деления «уголком» чисел dividend и divider.
+    Формат вывода приведён на примерах ниже.
+
+    Примеры:
+    >>> 12345÷25
+    12345|25
+    100  |493
+     234
+     225
+       95
+       75
+       20
+
+    >>> 1234÷1423
+    1234|1423
+    1234|0
+
+    >>> 24600÷123
+    24600|123
+    246  |200
+      0
+
+    >>> 246001÷123
+    246001|123
+    246   |2000
+         1
+    '''
+    quot = str(dividend // divider)
+    pre_rem = str(dividend)
+    division_res = ""
+    next_line = ""
+    space_count_1 = 0
+    space_count_2 = 0
+    next_mult = 0
+    print(f"{dividend}|{divider}")
+
+    if divider == 1:
+        print(f"{dividend}|{dividend}")
+        print(f"{' ' * (len(str(dividend)) - 1)}0")
+    else:
+        for i in range(len(quot)):
+            if quot[i] != "0":
+                space_count_1 = len(str(dividend)) - len(pre_rem)
+                cur_mult = int(quot[i]) * divider
+                if i<len(quot)-1:
+                    next_mult = int(quot[i+1]) * divider
+                cur_divident = int(pre_rem[0:len(str(cur_mult))])
+                current_rem = cur_divident - cur_mult
+                pre_rem = f"{current_rem}{pre_rem[len(str(cur_mult)):]}"
+                cur_bro = find_next_num(pre_rem, str(next_mult), str(current_rem))
+                space_count_2 += len(str(cur_divident)) - len(str(current_rem))
+                next_line = f"{' ' * space_count_2}{cur_bro}"
+
+                if i == 0:
+                    division_res = f"{cur_mult}{' ' * (len(str(dividend)) - len(str(cur_mult)))}|{quot}"
+                else:
+                    division_res = f"{' ' * space_count_1}{cur_mult}"
+
+                print(division_res)
+                print(next_line)
+
+
+
+def find_next_num(pre_rem, cur_mult, current_rem):
+    ret_value = current_rem
+    for i in range(len(current_rem), len(pre_rem)):
+        if int(ret_value) > int(cur_mult):
+            break
+        ret_value = f"{ret_value}{pre_rem[i]}"
+    return ret_value
+
+def main():
+    print(long_division(123, 123))
+    print()
+    print(long_division(1, 1))
+    print()
+    print(long_division(15, 3))
+    print()
+    print(long_division(3, 15))
+    print()
+    print(long_division(12345, 25))
+    print()
+    print(long_division(1234, 1423))
+    print()
+    print(long_division(87654532, 1))
+    print()
+    print(long_division(24600, 123))
+    print()
+    print(long_division(4567, 1234567))
+    print()
+    print(long_division(246001, 123))
+    print()
+    print(long_division(100000, 50))
+    print()
+    print(long_division(123456789, 531))
+    print()
+    print(long_division(425934261694251, 12345678))
+
+
+if __name__ == '__main__':
+    main()

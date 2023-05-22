@@ -8,16 +8,12 @@ handler = CloudsHandler()
 
 def check(directory='root'):
     """
-    Returns a list of user's files from concrete directory on GDrive
+    Prints list of user's files from concrete directory on GDrive or if it's
+    unavailable from YandexDisk
     Parameters
     ----------
     directory : string
         String that represents the name of desired directory for search
-
-    Returns
-    -------
-    list
-        list of found files or None
     """
     print("Подождите, выполняется поиск файлов и папок, это может занять "
           "некоторое время"+'\n')
@@ -44,20 +40,16 @@ def check(directory='root'):
 
 def download(is_dir_str='folder', name='root'):
     """
-    Downloads a file/folder with {name}
+    Downloads a file/folder with {name} from GDrive or Yandex Disk on your
+    computer
     Parameters
     ----------
-    is_dir_str : string
+    is_dir_str :
         String that represents what you want to download: 'folder' or 'file'
 
-    name : string
-        String that represents the name of desired directory or file to
-        download
-
-    Returns
-    -------
-    nothing
-        prints 'folder downloaded' of '{filename} downloaded'
+    name :
+        String that represents the name of desired directory or file on your
+        cloud to download
     """
 
     if is_dir_str == 'folder':
@@ -80,20 +72,16 @@ def download(is_dir_str='folder', name='root'):
 
 def upload(is_folder='folder', path='Backup'):
     """
-    Uploads a file/folder with {path}, {path} can be both absolute and relative
+    Uploads a file/folder with {path} from your computer on GDrive or
+    YandexDisk, {path} can be both absolute and relative
     Parameters
     ----------
-    is_folder : string
+    is_folder :
         String that represents what you want to upload: 'folder' or 'file'
 
-    path : string
-        String that represents the path of desired directory or file to
-        download
-
-    Returns
-    -------
-    nothing
-        prints 'All staff downloaded successfully' if OK
+    path :
+        String that represents the path on computer of desired directory or
+        file to download
     """
 
     if not os.path.exists(path):

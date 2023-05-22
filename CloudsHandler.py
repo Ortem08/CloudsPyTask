@@ -76,8 +76,7 @@ class CloudsHandler:
                     break
             print()
         elif not possible_files:
-            print(f'Не нашлось файлов/папок с именем: {name}')
-            return
+            raise NotImplementedError
         else:
             desired_file = possible_files[0]
 
@@ -124,21 +123,21 @@ class CloudsHandler:
             print(self.yandex.download_file(desired_file))
 
     def upload_google(self, is_folder, path):
-        """Downloads a file or a folder
+        """Uploads a file or a folder
         Args:
             is_folder: Does selected object is folder?
             path: path to the uploaded file or folder
         Returns : Nothing
         """
         if is_folder == 'file':
-            self.google.upload_file(path=path, parents_id='root')
+            return self.google.upload_file(path=path, parents_id='root')
         elif is_folder == 'folder':
-            self.google.upload_folder(path=path, parents_id='root')
+            return self.google.upload_folder(path=path, parents_id='root')
         else:
             print(f'Wrong parameter {is_folder}')
 
     def upload_yandex(self, is_folder, path):
-        """Downloads a file or a folder
+        """Uploads a file or a folder
         Args:
             is_folder: Does selected object is folder?
             path: path to the uploaded file or folder
