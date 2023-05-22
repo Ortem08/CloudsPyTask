@@ -1,9 +1,9 @@
 import fire
 import os
+from CloudsHandler import CloudsHandler
 
-from googleapiclient.errors import HttpError
 
-import CloudsHandler
+handler = CloudsHandler()
 
 
 def check(directory='root'):
@@ -11,9 +11,6 @@ def check(directory='root'):
     Returns a list of user's files from concrete directory on GDrive
     Parameters
     ----------
-    files_type : string
-        String that represents the desired type of files
-
     directory : string
         String that represents the name of desired directory for search
 
@@ -23,20 +20,21 @@ def check(directory='root'):
         list of found files or None
     """
     print("Подождите, выполняется поиск файлов и папок, это может занять "
-          "некотрое время"+'\n')
+          "некоторое время"+'\n')
     try:
-        files = CloudsHandler.check_google(directory)
+        files = handler.check_google(directory)
     except Exception:
         try:
-            files = CloudsHandler.check_yandex(directory)
-        except Exception as e:
-            print("THATS WASSUP BRO, NOTHING THERE")
+            files = handler.check_yandex(directory)
+        except Exception:
+            print("THAT'S WHAT'S UP BRO, NOTHING THERE")
             return
 
     if len(files) == 0:
         print("Нет файлов")
     for file in files:
-        if (file.get('type') == 'dir') or ('folder' in str(file.get('mimeType'))):
+        if (file.get('type') == 'dir') \
+                or ('folder' in str(file.get('mimeType'))):
             print(F'Папка: {file.get("name")}, '
                   F'путь: {file.get("path")}' + '\n')
         else:
@@ -71,12 +69,12 @@ def download(is_dir_str='folder', name='root'):
         return
 
     try:
-        CloudsHandler.download_google(is_dir, name)
+        handler.download_google(is_dir, name)
     except Exception:
         try:
-            CloudsHandler.download_yandex(is_dir, name)
+            handler.download_yandex(is_dir, name)
         except Exception:
-            print("WTF BROO??!!")
+            print("WTF BRO??!!")
             return
 
 
@@ -103,13 +101,13 @@ def upload(is_folder='folder', path='Backup'):
         return
 
     try:
-        CloudsHandler.upload_google(is_folder=is_folder, path=path)
+        handler.upload_google(is_folder=is_folder, path=path)
     except Exception:
         try:
-            CloudsHandler.upload_yandex(is_folder, path)
+            handler.upload_yandex(is_folder, path)
         except Exception as e:
             print(e)
-            print("HOLY FUCK I DUNNO WHATAHECK")
+            print("HOLY FUCK I DUNNO WHAT-A-HECK")
             return
 
     print('All staff was uploaded successfully')
