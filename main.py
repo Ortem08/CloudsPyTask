@@ -3,12 +3,7 @@ import os
 
 from googleapiclient.errors import HttpError
 
-import GoogleDrive
-import YandexDisk
 import CloudsHandler
-
-
-creds = GoogleDrive.authorize()
 
 
 def check(directory='root'):
@@ -27,7 +22,8 @@ def check(directory='root'):
     list
         list of found files or None
     """
-    print("Подождите, выполняется поиск файлов и папок, это может занять некотрое время"+'\n')
+    print("Подождите, выполняется поиск файлов и папок, это может занять "
+          "некотрое время"+'\n')
     try:
         files = CloudsHandler.check_google(directory)
     except Exception:
@@ -75,7 +71,7 @@ def download(is_dir_str='folder', name='root'):
         return
 
     try:
-        raise Exception
+        CloudsHandler.download_google(is_dir, name)
     except Exception:
         try:
             CloudsHandler.download_yandex(is_dir, name)
@@ -107,7 +103,7 @@ def upload(is_folder='folder', path='Backup'):
         return
 
     try:
-        CloudsHandler.upload_google(creds=creds, is_folder=is_folder, path=path)
+        CloudsHandler.upload_google(is_folder=is_folder, path=path)
     except Exception:
         try:
             CloudsHandler.upload_yandex(is_folder, path)

@@ -1,9 +1,8 @@
 import json
-import re
+
 
 import requests
 import os
-from datetime import datetime
 
 
 URL = 'https://cloud-api.yandex.net/v1/disk/resources'
@@ -85,7 +84,7 @@ def get_file_info(name=None, is_folder=False):
         result = files
 
     if is_folder:
-        files = get_all_folders(files)
+        files = get_all_folders(files=files)
 
     if name and not is_folder:
         for file in files:
