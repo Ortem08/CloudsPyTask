@@ -1,5 +1,8 @@
 import fire
 import os
+
+from requests.exceptions import HTTPError
+
 from CloudsHandler import CloudsHandler
 
 
@@ -19,11 +22,11 @@ def check(directory='root'):
           "некоторое время"+'\n')
     try:
         files = handler.check_google(directory)
-    except Exception:
+    except HTTPError:
         try:
             files = handler.check_yandex(directory)
-        except Exception:
-            print("THAT'S WHAT'S UP BRO, NOTHING THERE")
+        except HTTPError:
+            print("Оба сервера недоступны, попробуйте позже")
             return
 
     if len(files) == 0:
@@ -62,12 +65,12 @@ def download(is_dir_str='folder', name='root'):
 
     try:
         handler.download_google(is_dir, name)
-    except Exception:
+    except HTTPError:
+        print("Первый сервер недоступен, пробуем подключиться ко второму")
         try:
             handler.download_yandex(is_dir, name)
-        except Exception:
-            print("WTF BRO??!!")
-            return
+        except HTTPError:
+            print("Оба сервера недоступны, попробуйте позже")
 
 
 def upload(is_folder='folder', path='Backup'):
@@ -90,12 +93,12 @@ def upload(is_folder='folder', path='Backup'):
 
     try:
         handler.upload_google(is_folder=is_folder, path=path)
-    except Exception:
+    except HTTPError:
+        print("Первый сервер недоступен, пробуем подключиться ко второму")
         try:
             handler.upload_yandex(is_folder, path)
-        except Exception as e:
-            print(e)
-            print("HOLY FUCK I DUNNO WHAT-A-HECK")
+        except HTTPError:
+            print("Оба сервера недоступны, попробуйте позже")
             return
 
     print('All staff was uploaded successfully')

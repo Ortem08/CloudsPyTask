@@ -41,3 +41,10 @@ class TestHandler(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             self.handler.download_google(is_dir='folder',
                                          name='NON_EXISTENT_DIR')
+
+    def test_try_download_nonexistent_file_google(self):
+        with self.assertRaises(NotImplementedError):
+            self.handler.download_google(is_dir='file',
+                                         name='NON_EXISTENT_FILE')
+
+

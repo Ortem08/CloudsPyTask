@@ -2,6 +2,7 @@ import json
 import requests
 import os
 
+from requests.exceptions import HTTPError
 
 def get_all_folders(files):
     """Вывод всех папок на Диске"""
@@ -33,30 +34,32 @@ class YandexDisk:
         path: Путь к создаваемой папке на Диске"""
 
         params = {'path': path}
-        requests.put(self.URL, headers=self.headers, params=params)
+        try:
+            requests.put(self.URL, headers=self.headers, params=params)
+        except requests.exceptions.RequestException:
+            raise HTTPError
 
     def upload_file(self, path_source, path_result, replace=False):
         """Загрузка файла.
         path_result: Путь к файлу на Диске
         path_source: Путь к загружаемому файлу на компьютере
-        replace: True или False - Замена файла на Диске при конфликте"""
-
+        replace: True или False - Замена файла на Диске при конфликте
+        """
         params = {
             'path': f'{path_result}{os.path.basename(path_source)}',
             'overwrite': replace
         }
 
-        res = requests.get(f'{self.URL}/upload',
-                           headers=self.headers, params=params).json()
-
-        with open(path_source, 'rb') as f:
-            try:
+        try:
+            res = requests.get(f'{self.URL}/upload',
+                               headers=self.headers, params=params).json()
+            with open(path_source, 'rb') as f:
                 requests.put(res['href'], files={'file': f})
-            except KeyError:
-                print(res)
-                return
-            print(f'File {os.path.basename(path_source)} '
-                  f'uploaded successfully')
+        except requests.exceptions.RequestException:
+            return HTTPError
+
+        print(f'File {os.path.basename(path_source)} '
+              f'uploaded successfully')
 
     def upload_folder(self, save_path, load_path):
         """Загрузка папки на Диск.
@@ -64,9 +67,8 @@ class YandexDisk:
          load_path: Путь к загружаемой папке на компьютере"""
 
         date_folder = os.path.basename(load_path)
-
-        for address, _, files in os.walk(load_path):
-            try:
+        try:
+            for address, _, files in os.walk(load_path):
                 folder_name = address.replace(load_path, "")[1:] \
                     .replace("\\", "/")
                 self.create_folder(F'{save_path}/{date_folder}/{folder_name}')
@@ -75,11 +77,14 @@ class YandexDisk:
                         .replace("\\", "/")
                     self.upload_file(f'{address}/{file}',
                                      f'{save_path}/{date_folder}'
-                                     f'{path_to_folder}/{file}', replace=True)
-            except Exception:
-                print('Can`t download')
-                return
-            print(f'Folder {os.path.basename(address)} uploaded successfully')
+                                     f'{path_to_folder}/{file}',
+                                     replace=True)
+                print(
+                    f'Folder {os.path.basename(address)} uploaded successfully'
+                )
+        except requests.exceptions.RequestException:
+            print('Can`t upload')
+            raise HTTPError
 
     def search(self, path):
         """Поиск файлов в указанной директории
@@ -90,8 +95,13 @@ class YandexDisk:
                       '_embedded.items.type',
             'path': f'{path}'
         }
-        res = requests.get(self.URL,
-                           headers=self.headers, params=params).json()
+        try:
+            res = requests.get(self.URL,
+                               headers=self.headers, params=params).json()
+        except requests.exceptions.RequestException:
+            print(f'Server error')
+            raise HTTPError
+
         return res.get('_embedded').get('items')
 
     def get_file_info(self, name=None, is_folder=False):
@@ -101,8 +111,12 @@ class YandexDisk:
 
         params = {'limit': '10000',
                   'fields': 'items.name,items.type,items.path'}
-        res = requests.get(f'{self.URL}/files',
-                           headers=self.headers, params=params).json()
+        try:
+            res = requests.get(f'{self.URL}/files',
+                               headers=self.headers, params=params).json()
+        except requests.exceptions.RequestException:
+            raise HTTPError
+
         files = res.get('items')
         result = []
 
@@ -142,14 +156,17 @@ class YandexDisk:
         if not os.path.isdir(path):
             os.mkdir(path)
 
-        request = requests.get(
-            f'{self.URL}/download?path={file.get("path")}',
-            headers=self.headers)
-        download_url = request.json()['href']
+        try:
+            request = requests.get(
+                f'{self.URL}/download?path={file.get("path")}',
+                headers=self.headers)
+            download_url = request.json()['href']
 
-        download_response = requests.get(download_url)
-        with open(f'{path}/{file.get("name")}', 'wb') as f:
-            f.write(download_response.content)
+            download_response = requests.get(download_url)
+            with open(f'{path}/{file.get("name")}', 'wb') as f:
+                f.write(download_response.content)
+        except requests.exceptions.RequestException:
+            raise HTTPError
 
     def download_folder(self, folder, path=None):
         """Скачивание выбранной папки на компьютер
@@ -162,7 +179,10 @@ class YandexDisk:
         if not os.path.isdir(path):
             os.mkdir(path)
 
-        files = self.search(folder.get("path"))
+        try:
+            files = self.search(folder.get("path"))
+        except requests.exceptions.RequestException:
+            raise HTTPError
 
         for file in files:
             if 'dir' in file.get("type"):

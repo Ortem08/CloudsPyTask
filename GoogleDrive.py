@@ -8,6 +8,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
+from google.auth.exceptions import RefreshError
+from requests.exceptions import HTTPError
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/drive']
@@ -20,19 +22,27 @@ def authorize():
     Returns : Credentials
     """
     creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=8080)
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+    try:
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                creds = flow.run_local_server(port=8080)
+            # Save the credentials for the next run
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
+    except ValueError:
+        print(F'Неверный формат файла "token.json"')
+        creds = None
+    except RefreshError:
+        print(F'Не удалось обновить токен')
+        creds = None
+
     return creds
 
 
@@ -55,24 +65,25 @@ def get_path_for_file(service, file):
         service: builds a service,
         - using this object we can interact with Google Drive
         file: json object describing the desired file
-    Returns : String
+    Returns : String that represents path for given file/folder
     """
-    # Get the parent folder IDs
     parent_ids = file.get("parents")
-
-    # Get the path to the file
     path_parts = []
 
-    while parent_ids:
-        parent_id = parent_ids[0]
-        parent_metadata = service.files().get(fileId=parent_id,
-                                              fields="id, name, "
-                                                     "parents").execute()
-        parent_name = parent_metadata.get("name")
-        path_parts.insert(0, parent_name)
-        parent_ids = parent_metadata.get("parents")
+    try:
+        while parent_ids:
+            parent_id = parent_ids[0]
+            parent_metadata = service.files().get(fileId=parent_id,
+                                                  fields="id, name, "
+                                                         "parents").execute()
+            parent_name = parent_metadata.get("name")
+            path_parts.insert(0, parent_name)
+            parent_ids = parent_metadata.get("parents")
 
-    file_path = "/".join(path_parts) + '/'
+        file_path = "/".join(path_parts) + '/'
+    except HttpError:
+        raise HTTPError
+
     return file_path
 
 
@@ -111,8 +122,8 @@ class GoogleDrive:
                     'wb') as f:
                 f.write(final_file.getvalue())
 
-        except HttpError as error:
-            print(F'An error occurred: {error}')
+        except HttpError:
+            raise HTTPError
 
         return f'{file.get("name")} downloaded'
 
@@ -142,9 +153,8 @@ class GoogleDrive:
                 else:
                     self.download_file(file=file, path=path)
 
-        except HttpError as error:
-            print(F'An error occurred: {error}')
-            return False
+        except HttpError:
+            raise HTTPError
 
         return True
 
@@ -156,15 +166,14 @@ class GoogleDrive:
                name: Name of the file or folder
            Returns : List of files
         """
+        files = []
+        page_token = None
+
+        q = "trashed=false " \
+            f"and 'me' in owners " + \
+            make_q_parameters(name=name, extension=extension,
+                              parent=directory_id)
         try:
-            files = []
-            page_token = None
-
-            q = "trashed=false " \
-                f"and 'me' in owners " + \
-                make_q_parameters(name=name, extension=extension,
-                                  parent=directory_id)
-
             while True:
                 res = self.service.files().list(q=q,
                                                 spaces='drive',
@@ -182,9 +191,8 @@ class GoogleDrive:
             for file in files:
                 file['path'] = get_path_for_file(self.service, file)
 
-        except HttpError as error:
-            print(F'An error occurred: {error}')
-            files = None
+        except HttpError:
+            raise HTTPError
 
         return files
 
@@ -195,20 +203,20 @@ class GoogleDrive:
                is_folder: Does selected object is folder?
            Returns : List of files with selected name
         """
+        files = []
+        page_token = None
+
+        q = f"trashed=false " \
+            f"and 'me' in owners "
+        if name == 'root':
+            q = q + f"and 'root' in parents "
+        else:
+            q = q + f"and name='{name}' "
+
+        if is_folder:
+            q = q + f"and mimeType='application/vnd.google-apps.folder' "
+
         try:
-            files = []
-            page_token = None
-
-            q = f"trashed=false " \
-                f"and 'me' in owners "
-            if name == 'root':
-                q = q + f"and 'root' in parents "
-            else:
-                q = q + f"and name='{name}' "
-
-            if is_folder:
-                q = q + f"and mimeType='application/vnd.google-apps.folder' "
-
             while True:
                 res = self.service.files().list(q=q,
                                                 spaces='drive',
@@ -236,9 +244,8 @@ class GoogleDrive:
                             F'путь: {get_path_for_file(self.service, file)}, '
                             F'ID: {file.get("id")}, Файл')
 
-        except HttpError as error:
-            print(F'An error occurred: {error}')
-            files = None
+        except HttpError:
+            raise HTTPError
 
         return files
 
@@ -262,9 +269,8 @@ class GoogleDrive:
             else:
                 self.service.files().update(fileId=existing_files[0].get('id'),
                                             media_body=media_content).execute()
-        except Exception:
-            print("Ошибка")
-            return False
+        except HttpError:
+            raise HTTPError
 
         print(f'File {name} successfully uploaded')
         return True
@@ -305,9 +311,8 @@ class GoogleDrive:
                     self.upload_file(path=file_path,
                                      parents_id=folder.get('id'))
 
-        except Exception:
-            print("ОШИБКА")
-            return False
+        except HttpError:
+            raise HTTPError
 
         print(f'Folder {name} successfully uploaded')
         return True

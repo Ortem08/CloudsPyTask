@@ -1,3 +1,5 @@
+import requests.exceptions
+
 from GoogleDrive import GoogleDrive
 from YandexDisk import YandexDisk
 
@@ -9,7 +11,8 @@ class CloudsHandler:
 
     def check_google(self, directory='all'):
         """Displays files in the given directory
-           Returns: List of files"""
+           Returns: List of files
+        """
         if directory == 'all':
             dir_id = 'all'
         elif directory == 'root':
@@ -22,8 +25,9 @@ class CloudsHandler:
                       'Уточните ID папки.')
                 dir_id = input("ID: ")
                 print()
-            elif not possible_dirs:
-                raise NotImplementedError
+            elif len(possible_dirs) == 0:
+                print(f"Не нашлось папок {directory}")
+                raise requests.exceptions.HTTPError
             else:
                 dir_id = possible_dirs[0].get('id')
 
@@ -48,7 +52,8 @@ class CloudsHandler:
                       'Уточните путь папки.')
                 desired_path = input("Путь: ")
             elif len(possible_dirs) == 0:
-                raise NotImplementedError
+                print(f'Не нашлось папок с именем {directory}')
+                raise requests.exceptions.HTTPError
             else:
                 desired_path = possible_dirs[0].get('path')
 
@@ -75,8 +80,9 @@ class CloudsHandler:
                     desired_file = file
                     break
             print()
-        elif not possible_files:
-            raise NotImplementedError
+        elif len(possible_files) == 0:
+            print(f"Не нашлось файлов {name}")
+            raise requests.exceptions.HTTPError
         else:
             desired_file = possible_files[0]
 
@@ -108,9 +114,9 @@ class CloudsHandler:
                     desired_file = file
                     break
             print()
-        elif not possible_files:
+        elif len(possible_files) == 0:
             print(f'Не нашлось файлов/папок с именем: {name}')
-            return
+            raise requests.exceptions.HTTPError
         else:
             desired_file = possible_files[0]
 
