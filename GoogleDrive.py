@@ -38,10 +38,10 @@ def authorize():
                 token.write(creds.to_json())
     except ValueError:
         print(F'Неверный формат файла "token.json"')
-        creds = None
+        return
     except RefreshError:
-        print(F'Не удалось обновить токен')
-        creds = None
+        os.remove('token.json')
+        authorize()
 
     return creds
 
