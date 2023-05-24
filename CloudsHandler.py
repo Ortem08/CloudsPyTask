@@ -35,7 +35,8 @@ class CloudsHandler:
 
     def check_yandex(self, directory='all'):
         """Displays files in the given directory
-           Returns: List of files"""
+           Returns: List of files
+        """
         if directory == 'all':
             files = self.yandex.get_file_info()
         elif directory == 'root':
@@ -66,7 +67,6 @@ class CloudsHandler:
         Args:
             is_dir: Does selected object is folder?
             name: name of the selected file of folder
-        Returns : Nothing
         """
         possible_files = self.google.get_file_info(name=name, is_folder=is_dir)
         desired_file = None
@@ -99,7 +99,6 @@ class CloudsHandler:
         Args:
             is_dir: Does selected object is folder?
             name: name of the selected file of folder
-        Returns : Nothing
         """
         possible_files = self.yandex.get_file_info(name, is_dir)
         desired_file = None
@@ -131,28 +130,24 @@ class CloudsHandler:
     def upload_google(self, is_folder, path):
         """Uploads a file or a folder
         Args:
-            is_folder: Does selected object is folder?
+            is_folder: bool. Is selected object is folder?
             path: path to the uploaded file or folder
-        Returns : Nothing
+        Returns : True if OK. False otherwise
         """
-        if is_folder == 'file':
+        if not is_folder:
             return self.google.upload_file(path=path, parents_id='root')
-        elif is_folder == 'folder':
-            return self.google.upload_folder(path=path, parents_id='root')
         else:
-            print(f'Wrong parameter {is_folder}')
+            return self.google.upload_folder(path=path, parents_id='root')
 
     def upload_yandex(self, is_folder, path):
         """Uploads a file or a folder
         Args:
-            is_folder: Does selected object is folder?
+            is_folder: bool. Is selected object is folder?
             path: path to the uploaded file or folder
-        Returns : Nothing
+        Returns : True if OK. False otherwise
         """
-        if is_folder == 'file':
-            self.yandex.upload_file(path_result='/', path_source=path,
-                                    replace=True)
-        elif is_folder == 'folder':
-            self.yandex.upload_folder(save_path='', load_path=path)
+        if not is_folder:
+            return self.yandex.upload_file(path_result='/', path_source=path,
+                                           replace=True)
         else:
-            print(f'Wrong parameter {is_folder}')
+            return self.yandex.upload_folder(save_path='', load_path=path)

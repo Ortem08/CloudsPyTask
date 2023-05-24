@@ -4,6 +4,7 @@ import os
 
 from requests.exceptions import HTTPError
 
+
 def get_all_folders(files):
     """Вывод всех папок на Диске"""
     folders = set()
@@ -22,17 +23,18 @@ def get_all_folders(files):
 class YandexDisk:
     def __init__(self):
         """Инициализация класса YandexDisk
-        Проверьте, что self.TOKEN соответствует имеено ВАШЕМУ токену"""
-
+        Проверьте, что self.TOKEN соответствует именно ВАШЕМУ токену
+        """
         self.URL = 'https://cloud-api.yandex.net/v1/disk/resources'
-        self.TOKEN = 'y0_AgAAAAAX419AAAnoxwAAAADjPIe21IqyXBZdS' \
-                     'qGTURHTjFBpBZSUbFA'
+        self.TOKEN = 'y0_AgAAAAAcmCfkAAnoxwAAAADjPGamE13EKlY' \
+                     '-TvW1eh6xotNaz58030o '
         self.headers = {'Authorization': f'OAuth {self.TOKEN}'}
 
     def create_folder(self, path):
         """Создание папки.
-        path: Путь к создаваемой папке на Диске"""
-
+        Args:
+            path: Путь к создаваемой папке на Диске
+        """
         params = {'path': path}
         try:
             requests.put(self.URL, headers=self.headers, params=params)
@@ -41,9 +43,11 @@ class YandexDisk:
 
     def upload_file(self, path_source, path_result, replace=False):
         """Загрузка файла.
-        path_result: Путь к файлу на Диске
-        path_source: Путь к загружаемому файлу на компьютере
-        replace: True или False - Замена файла на Диске при конфликте
+        Args:
+            path_result: Путь к файлу на Диске
+            path_source: Путь к загружаемому файлу на компьютере
+            replace: True/False - Замена файла на Диске при конфликте
+        Returns: True если успех
         """
         params = {
             'path': f'{path_result}{os.path.basename(path_source)}',
@@ -60,11 +64,15 @@ class YandexDisk:
 
         print(f'File {os.path.basename(path_source)} '
               f'uploaded successfully')
+        return True
 
     def upload_folder(self, save_path, load_path):
         """Загрузка папки на Диск.
-         save_path: Путь к папке на Диске
-         load_path: Путь к загружаемой папке на компьютере"""
+        Args:
+            save_path: Путь к папке на Диске
+            load_path: Путь к загружаемой папке на компьютере
+        Returns: True если успех
+        """
 
         date_folder = os.path.basename(load_path)
         try:
@@ -86,9 +94,14 @@ class YandexDisk:
             print('Can`t upload')
             raise HTTPError
 
+        return True
+
     def search(self, path):
         """Поиск файлов в указанной директории
-         path: Путь к директории, в которой будет производится поиск"""
+        Args:
+            path: Путь к директории, в которой будет производиться поиск
+        Returns: Лист файлов в данной папке
+        """
 
         params = {
             'fields': '_embedded.items.name, _embedded.items.path, '
@@ -106,8 +119,11 @@ class YandexDisk:
 
     def get_file_info(self, name=None, is_folder=False):
         """Поиск информации о файле(-ах) с указанными именем
-         name: Имя разыскиваемого файла или папки
-         is_folder: Является ли разыскиваемый объект папкой?"""
+        Args:
+            name: Имя разыскиваемого файла или папки
+            is_folder: Является ли разыскиваемый объект папкой?
+        Return: Лист найденных файлов
+        """
 
         params = {'limit': '10000',
                   'fields': 'items.name,items.type,items.path'}
@@ -149,8 +165,10 @@ class YandexDisk:
 
     def download_file(self, file, path=None):
         """Скачивание выбранного файла на компьютер
-         file: json объект, описывающий желаемый файл
-         path: Путь к загружаемому файлу"""
+        Args:
+            file: json объект, описывающий желаемый файл
+            path: Путь к загружаемому файлу
+        """
         if not path:
             path = 'Downloads'
         if not os.path.isdir(path):
@@ -170,8 +188,11 @@ class YandexDisk:
 
     def download_folder(self, folder, path=None):
         """Скачивание выбранной папки на компьютер
-         folder: json объект, описывающий желаемую папку
-         path: Путь к загружаемой папке"""
+        Args:
+            folder: json объект, описывающий желаемую папку
+            path: Путь к загружаемой папке
+        Return: True если успех
+        """
         if not path:
             path = f'Downloads/{folder.get("name")}'
         else:

@@ -2,7 +2,6 @@ import fire
 import os
 
 from requests.exceptions import HTTPError
-
 from CloudsHandler import CloudsHandler
 
 
@@ -73,30 +72,37 @@ def download(is_dir_str='folder', name='root'):
             print("Оба сервера недоступны, попробуйте позже")
 
 
-def upload(is_folder='folder', path='Backup'):
+def upload(is_dir_str='folder', path='Backup'):
     """
     Uploads a file/folder with {path} from your computer on GDrive or
     YandexDisk, {path} can be both absolute and relative
     Parameters
     ----------
-    is_folder :
+    is_dir_str :
         String that represents what you want to upload: 'folder' or 'file'
 
     path :
         String that represents the path on computer of desired directory or
         file to download
     """
+    if is_dir_str == 'folder':
+        is_dir = True
+    elif is_dir_str == 'file':
+        is_dir = False
+    else:
+        print(f"Wrong command {is_dir_str}")
+        return
 
     if not os.path.exists(path):
         print("Wrong way")
         return
 
     try:
-        handler.upload_google(is_folder=is_folder, path=path)
+        handler.upload_google(is_folder=is_dir, path=path)
     except HTTPError:
         print("Первый сервер недоступен, пробуем подключиться ко второму")
         try:
-            handler.upload_yandex(is_folder, path)
+            handler.upload_yandex(is_folder=is_dir, path=path)
         except HTTPError:
             print("Оба сервера недоступны, попробуйте позже")
             return
