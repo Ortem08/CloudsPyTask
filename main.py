@@ -40,7 +40,7 @@ def check(directory='root'):
                   F'путь: {file.get("path")}' + '\n')
 
 
-def download(is_dir_str='folder', name='root'):
+def download(is_dir_str='folder', name='Backup'):
     """
     Downloads a file/folder with {name} from GDrive or Yandex Disk on your
     computer
